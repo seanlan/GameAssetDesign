@@ -209,6 +209,61 @@ When analyzing a design image, look for:
 Estimate bounding boxes as [left, top, right, bottom] in pixels.
 Mark elements that overlap others as higher layer.
 
+## Asset Manager
+
+After any generation or extraction, regenerate the asset manager page:
+
+```bash
+python3 -m game_asset_tools manager --output-dir output/ --manifest output/manifest.json --output output/asset_manager.html
+```
+
+Open it for the user:
+```bash
+open output/asset_manager.html
+```
+
+The manager page shows all assets with filtering, sorting, and selection. Users can select assets and submit refinement requests.
+
+### Reading User Selections (Browser Mode)
+
+When using Chrome tools, read submitted tasks:
+```javascript
+document.getElementById('manager-tasks-data').textContent
+```
+
+Parse the JSON to get refinement tasks, then execute each one.
+
+## Refinement Workflow
+
+When user requests refinement (via terminal or manager page):
+
+### edge_fix
+```bash
+python3 -m game_asset_tools remove_bg --input original.png --output fixed.png
+python3 -m game_asset_tools trim --input fixed.png --output trimmed.png --padding 1
+python3 -m game_asset_tools version save --asset path/to/asset.png --action "edge_fix" --note "description"
+```
+
+### ai_edit
+Use MCP edit_image with user's note as prompt, then save version.
+
+### ai_inpaint
+Use MCP edit_image with "Complete the missing [part]" prompt, then save version.
+
+### style_unify
+Use MCP style_transfer with project reference image, then save version.
+
+### After each refinement:
+1. Show result via Read tool
+2. User confirms → save version, update manifest, regenerate manager
+3. Not satisfied → retry with different approach
+
+## Version Management
+
+- "显示版本历史" → `python3 -m game_asset_tools version list --asset path`
+- "回滚到 v1" → `python3 -m game_asset_tools version rollback --asset path --to 1`
+- "对比 v1 和 v3" → `python3 -m game_asset_tools version compare --asset path --v1 1 --v2 3 --output compare.png`
+
 ## Critical: Background Removal
 
 **MUST use `rembg` (Python) for background removal. AI image editing (Gemini/NanoBanana edit) CANNOT produce true alpha transparency** — it only changes the background to white/light color, which is NOT a transparent PNG.
