@@ -1,0 +1,54 @@
+project:
+  name: "Example RPG"
+  engine: "unity"
+
+style:
+  preset: "anime"
+  reference_image: null
+  keywords: "vibrant colors, cel shading, fantasy theme"
+  palette: ["#2C3E50", "#E74C3C", "#F39C12", "#27AE60"]
+
+assets:
+  character:
+    sizes: [512, 1024]
+    format: "png"
+    transparent: true
+  background:
+    sizes: ["1920x1080", "1280x720"]
+    format: "png"
+    transparent: false
+  icon:
+    sizes: [64, 128, 256]
+    format: "png"
+    transparent: true
+  card:
+    size: "750x1050"
+    template: "templates/cards/default.png"
+    layout:
+      artwork: [50, 50, 650, 600]
+      title: [50, 660, 650, 60]
+      description: [50, 740, 650, 200]
+    text:
+      font: "templates/fonts/NotoSansSC-Regular.ttf"
+      title_size: 28
+      title_color: "#FFFFFF"
+      desc_size: 16
+      desc_color: "#CCCCCC"
+      align: "center"
+      overflow: "shrink"
+  sprite:
+    frame_size: [128, 128]
+    format: "png"
+    transparent: true
+  tileset:
+    tile_size: [32, 32]
+    format: "png"
+  ui:
+    sizes: [64, 128]
+    format: "png"
+    transparent: true
+    states: ["normal", "hover", "pressed", "disabled"]
+
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}_{size}_{variant}"

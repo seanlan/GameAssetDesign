@@ -1,0 +1,18 @@
+[project]
+name = "game-asset-tools"
+version = "0.1.0"
+description = "Python toolkit for game asset post-processing"
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0",
+    "rembg>=2.0",
+    "opencv-python-headless>=4.8,<4.10",
+    "numpy>=1.24,<1.27",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
