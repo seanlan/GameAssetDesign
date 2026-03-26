@@ -264,6 +264,32 @@ Use MCP style_transfer with project reference image, then save version.
 - "回滚到 v1" → `python3 -m game_asset_tools version rollback --asset path --to 1`
 - "对比 v1 和 v3" → `python3 -m game_asset_tools version compare --asset path --v1 1 --v2 3 --output compare.png`
 
+## Engine Export
+
+Export all assets restructured for a target game engine:
+
+```bash
+python3 -m game_asset_tools export --engine unity --input-dir output/ --export-dir ./unity_export/
+python3 -m game_asset_tools export --engine godot --input-dir output/ --export-dir ./godot_export/
+python3 -m game_asset_tools export --engine web --input-dir output/ --export-dir ./web_export/
+```
+
+Supported engines: unity, godot, cocos, web
+
+## Texture Atlas
+
+Pack multiple small sprites into optimized texture atlases:
+
+```bash
+python3 -m game_asset_tools atlas --input-dir output/icons/ --output atlas.png --meta atlas.json --max-size 2048x2048 --padding 2 --format generic
+```
+
+Formats: generic (simple JSON), phaser (TexturePacker compatible)
+
+## Project Progress
+
+When project config has a `requirements` section, the asset manager page shows a progress dashboard. Proactively suggest missing assets to the user based on requirements.
+
 ## Critical: Background Removal
 
 **MUST use `rembg` (Python) for background removal. AI image editing (Gemini/NanoBanana edit) CANNOT produce true alpha transparency** — it only changes the background to white/light color, which is NOT a transparent PNG.

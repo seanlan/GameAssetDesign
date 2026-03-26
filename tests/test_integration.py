@@ -226,3 +226,47 @@ def test_manager_with_manifest(tmp_dir):
     assert "icon_0" in html
     assert "Asset Manager" in html
     assert "edge_fix" in html
+
+
+def test_atlas_pipeline(tmp_dir):
+    """Pack icons into atlas and verify metadata."""
+    import json
+    from game_asset_tools.atlas import pack_atlas
+
+    icons_dir = os.path.join(tmp_dir, "icons")
+    os.makedirs(icons_dir)
+    for i in range(8):
+        Image.new("RGBA", (64, 64), (i * 30, 100, 200, 255)).save(
+            os.path.join(icons_dir, f"icon_{i}.png")
+        )
+
+    atlas_path = os.path.join(tmp_dir, "atlas.png")
+    meta_path = os.path.join(tmp_dir, "atlas.json")
+    pack_atlas(icons_dir, atlas_path, meta_path, max_size=(256, 256), padding=2)
+
+    assert os.path.exists(atlas_path)
+    atlas = Image.open(atlas_path)
+    assert atlas.width <= 256
+    assert atlas.height <= 256
+
+    with open(meta_path) as f:
+        meta = json.load(f)
+    total = sum(len(a["sprites"]) for a in meta["atlases"])
+    assert total == 8
+
+
+def test_export_pipeline(tmp_dir):
+    """Export assets for web engine and verify structure."""
+    from game_asset_tools.export import export_for_engine
+
+    input_dir = os.path.join(tmp_dir, "output")
+    for subdir in ["characters", "icons"]:
+        d = os.path.join(input_dir, subdir)
+        os.makedirs(d)
+        Image.new("RGBA", (64, 64), (100, 100, 100, 255)).save(os.path.join(d, "test.png"))
+
+    export_dir = os.path.join(tmp_dir, "web_export")
+    result = export_for_engine("web", input_dir, export_dir)
+    assert result["total"] == 2
+    assert os.path.exists(os.path.join(export_dir, "manifest.json"))
+    assert os.path.isdir(os.path.join(export_dir, "images", "characters"))
