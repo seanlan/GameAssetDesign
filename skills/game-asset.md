@@ -183,7 +183,11 @@ Triggered when user provides a design image and asks to extract assets from it.
 10. **Quality Check** — Read each extracted asset, compare with original
 11. Fix any issues (see Post-Extract Quality Pipeline)
 12. For backgrounds with needs_inpaint=true, use MCP edit_image
-13. Update manifest, regenerate asset_manager.html
+13. Update manifest and generate asset manager page (MUST do this after every extraction):
+   ```bash
+   python3 -m game_asset_tools manager --output-dir output/ --manifest output/manifest.json --output output/asset_manager.html
+   open output/asset_manager.html
+   ```
 
 ### CRITICAL: Bbox Calibration
 
