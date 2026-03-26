@@ -96,3 +96,72 @@ def test_batch_preview_pipeline(tmp_dir):
         html = f.read()
     assert "icon_item_0_64_v1.png" in html
     assert "Icon Set Preview" in html
+
+
+def test_extract_pipeline(tmp_dir):
+    """Full extract pipeline: design image → annotate → extract → verify outputs."""
+    import json
+    # Create a mock design image with distinct elements
+    img = Image.new("RGBA", (800, 600), (180, 200, 220, 255))
+    # "Character" - red figure in center
+    for x in range(300, 500):
+        for y in range(100, 500):
+            img.putpixel((x, y), (220, 50, 50, 255))
+    # "Icon" - yellow square top-left
+    for x in range(20, 84):
+        for y in range(20, 84):
+            img.putpixel((x, y), (240, 200, 40, 255))
+    # "Button" - blue bar at bottom
+    for x in range(250, 550):
+        for y in range(520, 570):
+            img.putpixel((x, y), (50, 120, 220, 255))
+    src_path = os.path.join(tmp_dir, "design.png")
+    img.save(src_path)
+
+    # Create elements definition
+    elements = {
+        "source": src_path,
+        "source_size": [800, 600],
+        "layers": {
+            "bottom": [
+                {"name": "scene_bg", "type": "background", "bbox": [0, 0, 800, 600],
+                 "needs_remove_bg": False, "needs_trim": False}
+            ],
+            "middle": [
+                {"name": "hero_warrior", "type": "character", "bbox": [300, 100, 500, 500],
+                 "needs_remove_bg": False, "needs_trim": True, "trim_padding": 4}
+            ],
+            "top": [
+                {"name": "skill_icon", "type": "icon", "bbox": [20, 20, 84, 84],
+                 "needs_remove_bg": False, "needs_trim": True, "trim_padding": 2},
+                {"name": "btn_action", "type": "ui", "bbox": [250, 520, 550, 570],
+                 "needs_remove_bg": False, "needs_trim": True, "trim_padding": 2},
+            ],
+        },
+        "shared_assets": [],
+    }
+    elements_path = os.path.join(tmp_dir, "elements.json")
+    with open(elements_path, "w") as f:
+        json.dump(elements, f)
+
+    # Step 1: Annotate
+    from game_asset_tools.annotate import annotate_image
+    annotated_path = os.path.join(tmp_dir, "annotated.png")
+    annotate_image(src_path, elements_path, annotated_path)
+    assert os.path.exists(annotated_path)
+
+    # Step 2: Extract
+    from game_asset_tools.extract import extract_elements
+    out_dir = os.path.join(tmp_dir, "output")
+    results = extract_elements(src_path, elements, out_dir, remove_bg=False)
+    assert len(results) == 4
+
+    # Verify outputs exist
+    types_found = {r["type"] for r in results}
+    assert "background" in types_found
+    assert "character" in types_found
+    assert "icon" in types_found
+    assert "ui" in types_found
+
+    for r in results:
+        assert os.path.exists(r["output_path"])
