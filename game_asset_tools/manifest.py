@@ -31,6 +31,7 @@ class Manifest:
         preset: str = "",
         reference_image: str | None = None,
         project_config: str = "",
+        relationships: dict | None = None,
     ) -> None:
         """Add a generation record."""
         entry = {
@@ -54,8 +55,31 @@ class Manifest:
             entry["reference_image"] = reference_image
         if project_config:
             entry["project_config"] = project_config
+        if relationships:
+            entry["relationships"] = relationships
 
         self.entries.append(entry)
+
+    def get_entry(self, file: str) -> dict | None:
+        """Return the entry dict for the given file, or None if not found."""
+        for entry in self.entries:
+            if entry.get("file") == file:
+                return entry
+        return None
+
+    def add_relationship(self, file: str, rel_type: str, target: str) -> None:
+        """Add a relationship target to an existing entry."""
+        entry = self.get_entry(file)
+        if entry is None:
+            return
+        if "relationships" not in entry:
+            entry["relationships"] = {}
+        if rel_type not in entry["relationships"]:
+            entry["relationships"][rel_type] = []
+        if isinstance(entry["relationships"][rel_type], str):
+            entry["relationships"][rel_type] = [entry["relationships"][rel_type]]
+        if target not in entry["relationships"][rel_type]:
+            entry["relationships"][rel_type].append(target)
 
     def save(self) -> None:
         """Write manifest to disk."""
