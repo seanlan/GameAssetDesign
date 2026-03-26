@@ -159,10 +159,49 @@ Build the MCP prompt by combining:
 
 Outputs to configured `output.base_dir` by type. Naming follows config template. Update manifest after each generation.
 
+## Critical: Background Removal
+
+**MUST use `rembg` (Python) for background removal. AI image editing (Gemini/NanoBanana edit) CANNOT produce true alpha transparency** — it only changes the background to white/light color, which is NOT a transparent PNG.
+
+If rembg is not installed:
+1. **First choice:** Install it: `pip3 install rembg`
+2. **Never** use AI edit as a "fallback" for background removal — it does not work
+
+```bash
+# Correct: true transparent background
+python3 -m game_asset_tools remove_bg --input raw.png --output nobg.png
+
+# WRONG: AI edit only makes background white, NOT transparent
+# mcp__gemini-image__edit_image "remove background" → still has opaque pixels
+```
+
+## Model Failover
+
+If NanoBanana times out or fails, automatically switch to Gemini:
+1. Try NanoBanana first (if style matches its enum)
+2. On timeout/error → retry with Gemini
+3. Inform user which model was used
+
+## Card Composition: Two Approaches
+
+### Approach A: Template-based (requires transparent template)
+Use `card_composer` with a border template PNG that has a truly transparent center.
+- Template must be created with proper alpha channel (not AI-generated — AI cannot reliably create transparency)
+- Best for: consistent card series with the same border
+
+### Approach B: One-shot generation (recommended for quick results)
+Generate the complete card (character + border + title) in a single AI call:
+```
+prompt: "A complete RPG character card featuring [character], ornate [style] border frame, title text '[name]' at bottom, dark background, game card design"
+```
+- Simpler, faster, better visual coherence
+- Then resize to exact card dimensions with Python
+
 ## Important Notes
 
 - Always translate Chinese descriptions to English for MCP prompts
 - Always show generated images for confirmation before post-processing
 - For batch operations, generate HTML preview
-- Gracefully handle missing dependencies
+- Background removal: ALWAYS use rembg, NEVER use AI edit
 - Intermediate files go to `output/.tmp/`
+- Verify alpha channel after background removal: corner pixel alpha should be 0

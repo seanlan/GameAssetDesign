@@ -79,6 +79,7 @@ def _cmd_card_composer(args):
         desc_region=desc_region,
         desc_color=args.desc_color,
         desc_size=int(args.desc_size),
+        font_path=args.font,
         overflow=args.overflow,
     )
     print(f"Card composed: {args.output}")
@@ -168,6 +169,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_card.add_argument("--desc-color", dest="desc_color", default="#000000", help="Description text color")
     p_card.add_argument("--desc-size", dest="desc_size", default="16", help="Description font size")
     p_card.add_argument("--overflow", default="truncate", choices=["truncate", "shrink", "wrap"], help="Text overflow mode")
+    p_card.add_argument("--font", help="Font file path for text rendering")
 
     # --- video_to_frames ---
     p_v2f = subparsers.add_parser("video_to_frames", help="Extract frames from a video")
