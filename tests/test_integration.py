@@ -165,3 +165,64 @@ def test_extract_pipeline(tmp_dir):
 
     for r in results:
         assert os.path.exists(r["output_path"])
+
+
+def test_version_workflow(tmp_dir):
+    """Full version workflow: create → edit → rollback."""
+    from game_asset_tools.version import VersionManager
+
+    asset_path = os.path.join(tmp_dir, "char_mage.png")
+    Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(asset_path)
+
+    vm = VersionManager(asset_path)
+    vm.save_version(action="generated", prompt="A mage character")
+    assert vm.current_version == 1
+
+    # Simulate edit
+    Image.new("RGBA", (64, 64), (0, 255, 0, 255)).save(asset_path)
+    vm.save_version(action="ai_edit", note="Changed color to green")
+    assert vm.current_version == 2
+
+    # Rollback
+    vm.rollback(1)
+    img = Image.open(asset_path)
+    assert img.getpixel((32, 32))[0] == 255  # red restored
+
+    # Compare
+    compare_path = os.path.join(tmp_dir, "compare.png")
+    vm2 = VersionManager(asset_path)
+    vm2.compare(1, 2, compare_path)
+    assert os.path.exists(compare_path)
+
+
+def test_manager_with_manifest(tmp_dir):
+    """Generate manager page from assets + manifest."""
+    from game_asset_tools.manager import generate_manager_html
+    from game_asset_tools.manifest import Manifest
+
+    out_dir = os.path.join(tmp_dir, "output")
+    icons_dir = os.path.join(out_dir, "icons")
+    os.makedirs(icons_dir)
+
+    for i in range(3):
+        Image.new("RGBA", (64, 64), (i * 80, 100, 200, 255)).save(
+            os.path.join(icons_dir, f"icon_{i}.png")
+        )
+
+    m = Manifest(out_dir, "test_game")
+    for i in range(3):
+        m.add_entry(
+            file=f"icons/icon_{i}.png", asset_type="icon",
+            prompt=f"Icon {i}", model="gemini", style="anime",
+        )
+    m.save()
+
+    html_path = os.path.join(tmp_dir, "manager.html")
+    generate_manager_html(out_dir, os.path.join(out_dir, "manifest.json"), html_path)
+    assert os.path.exists(html_path)
+
+    with open(html_path) as f:
+        html = f.read()
+    assert "icon_0" in html
+    assert "Asset Manager" in html
+    assert "edge_fix" in html
