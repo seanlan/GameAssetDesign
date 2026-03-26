@@ -61,6 +61,63 @@ def get_asset_config(config: dict, asset_type: str) -> dict | None:
     return assets.get(asset_type)
 
 
+def get_requirements(config: dict) -> dict:
+    """Get project asset requirements from config."""
+    return config.get("requirements", {})
+
+
+def check_progress(requirements: dict, output_dir: str) -> dict:
+    """Check which required assets exist in the output directory.
+
+    Returns dict mapping category → {total, done, completed, missing}.
+    """
+    # Map category names to output subdirectories
+    category_to_subdir = {
+        "characters": "characters",
+        "icons": "icons",
+        "ui": "ui",
+        "cards": "cards",
+        "backgrounds": "backgrounds",
+        "sprites": "sprites",
+        "tilesets": "tilesets",
+    }
+
+    progress = {}
+
+    for category, items in requirements.items():
+        subdir = category_to_subdir.get(category, category)
+        asset_dir = os.path.join(output_dir, subdir)
+
+        # List existing files
+        existing_files = []
+        if os.path.isdir(asset_dir):
+            for root, dirs, files in os.walk(asset_dir):
+                dirs[:] = [d for d in dirs if d != ".versions"]
+                for f in files:
+                    if f.lower().endswith((".png", ".jpg", ".jpeg")):
+                        existing_files.append(f.lower())
+
+        completed = []
+        missing = []
+        for item in items:
+            name = item["name"].lower()
+            # Match by substring in any existing filename
+            found = any(name in ef for ef in existing_files)
+            if found:
+                completed.append(item["name"])
+            else:
+                missing.append(item["name"])
+
+        progress[category] = {
+            "total": len(items),
+            "done": len(completed),
+            "completed": completed,
+            "missing": missing,
+        }
+
+    return progress
+
+
 def get_style_keywords(config: dict) -> str:
     """Build the full style keyword string from config."""
     style = config.get("style", {})

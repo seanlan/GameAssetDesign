@@ -1,5 +1,6 @@
 import os
 import pytest
+from PIL import Image
 from game_asset_tools.config import load_config, get_asset_config, get_style_keywords
 
 
@@ -158,3 +159,104 @@ output:
     keywords = get_style_keywords(config)
     assert "pixel art" in keywords
     assert "16-bit style" in keywords
+
+
+def test_get_requirements(tmp_dir):
+    from game_asset_tools.config import get_requirements
+    config_path = os.path.join(tmp_dir, "test.yaml")
+    with open(config_path, "w") as f:
+        f.write("""
+project:
+  name: "Test"
+  engine: "unity"
+style:
+  preset: "anime"
+  keywords: ""
+  palette: []
+assets: {}
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}"
+requirements:
+  characters:
+    - name: "fire_mage"
+      sizes: [512, 1024]
+    - name: "ice_archer"
+  icons:
+    - name: "fireball"
+    - name: "ice_arrow"
+    - name: "healing"
+""")
+    config = load_config(config_path)
+    reqs = get_requirements(config)
+    assert "characters" in reqs
+    assert len(reqs["characters"]) == 2
+    assert reqs["characters"][0]["name"] == "fire_mage"
+    assert len(reqs["icons"]) == 3
+
+
+def test_get_requirements_empty(tmp_dir):
+    from game_asset_tools.config import get_requirements
+    config_path = os.path.join(tmp_dir, "test.yaml")
+    with open(config_path, "w") as f:
+        f.write("""
+project:
+  name: "Test"
+  engine: "unity"
+style:
+  preset: "anime"
+  keywords: ""
+  palette: []
+assets: {}
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}"
+""")
+    config = load_config(config_path)
+    reqs = get_requirements(config)
+    assert reqs == {}
+
+
+def test_check_progress(tmp_dir):
+    from game_asset_tools.config import get_requirements, check_progress
+    config_path = os.path.join(tmp_dir, "test.yaml")
+    with open(config_path, "w") as f:
+        f.write("""
+project:
+  name: "Test"
+  engine: "unity"
+style:
+  preset: "anime"
+  keywords: ""
+  palette: []
+assets: {}
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}"
+requirements:
+  characters:
+    - name: "fire_mage"
+    - name: "ice_archer"
+  icons:
+    - name: "fireball"
+    - name: "healing"
+""")
+    config = load_config(config_path)
+    reqs = get_requirements(config)
+
+    # Create some matching assets
+    out_dir = os.path.join(tmp_dir, "output")
+    chars_dir = os.path.join(out_dir, "characters")
+    icons_dir = os.path.join(out_dir, "icons")
+    os.makedirs(chars_dir)
+    os.makedirs(icons_dir)
+    Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(os.path.join(chars_dir, "char_fire_mage_512_v1.png"))
+    Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(os.path.join(icons_dir, "icon_fireball_64_v1.png"))
+
+    progress = check_progress(reqs, out_dir)
+    assert progress["characters"]["total"] == 2
+    assert progress["characters"]["done"] == 1
+    assert "fire_mage" in progress["characters"]["completed"]
+    assert "ice_archer" in progress["characters"]["missing"]
+    assert progress["icons"]["done"] == 1
+    assert "healing" in progress["icons"]["missing"]
