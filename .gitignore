@@ -47,6 +47,7 @@ Thumbs.db
 
 # Project-specific
 output/*
+output/.tmp/
 !output/.gitkeep
 !output/characters/.gitkeep
 !output/backgrounds/.gitkeep
