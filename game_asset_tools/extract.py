@@ -10,6 +10,22 @@ from PIL import Image
 # Layer processing order: bottom first, then middle, then top
 LAYER_ORDER = ["bottom", "middle", "top"]
 
+# Map asset type to standard output subdirectory (plural form)
+TYPE_TO_SUBDIR = {
+    "character": "characters",
+    "icon": "icons",
+    "ui": "ui",
+    "background": "backgrounds",
+    "sprite": "sprites",
+    "tileset": "tilesets",
+    "card": "cards",
+}
+
+
+def _type_subdir(asset_type: str) -> str:
+    """Get the standard output subdirectory for an asset type."""
+    return TYPE_TO_SUBDIR.get(asset_type, asset_type)
+
 
 def load_elements(path: str) -> dict:
     """Load elements definition from a JSON file."""
@@ -159,7 +175,7 @@ def extract_elements(
     for item in shared_assets:
         asset_type = item.get("type", "misc")
         name = item["name"]
-        shared_dir = os.path.join(output_dir, asset_type, "shared")
+        shared_dir = os.path.join(output_dir, _type_subdir(asset_type), "shared")
         os.makedirs(shared_dir, exist_ok=True)
         out_path = os.path.join(shared_dir, f"{name}.png")
 
@@ -187,7 +203,7 @@ def extract_elements(
         for item in layers[layer_name]:
             element_type = item.get("type", "misc")
             name = item["name"]
-            type_dir = os.path.join(output_dir, element_type)
+            type_dir = os.path.join(output_dir, _type_subdir(element_type))
             os.makedirs(type_dir, exist_ok=True)
             out_path = os.path.join(type_dir, f"{name}.png")
 

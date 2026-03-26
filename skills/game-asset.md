@@ -166,48 +166,137 @@ Triggered when user provides a design image and asks to extract assets from it.
 ### Flow
 
 1. User provides image path: "/game-asset 从这张图里提取素材"
-2. Read the image with Read tool to analyze visually
-3. Identify all elements with their:
-   - Name, type (character/icon/ui/background/sprite/tileset)
-   - Bounding box [left, top, right, bottom]
-   - Layer (bottom/middle/top)
-   - Whether it needs background removal
-   - Whether it's a shared component
-
+2. Read the image with Read tool, get pixel dimensions
+3. Identify all elements (see Detection Guidelines below)
 4. Write elements.json to output/.tmp/elements.json
-
 5. Generate annotated preview:
    ```bash
    python3 -m game_asset_tools annotate --input design.png --elements elements.json --output annotated.png
    ```
-
-6. Show annotated preview via Read tool, ask user to confirm
-
-7. User adjustments (re-annotate after each change):
-   - "删掉 3 号" → remove from elements.json
-   - "2 号改名 ice_arrow" → update name
-   - "1 号往右扩 20px" → adjust bbox
-
-8. On confirmation, extract:
+6. Show annotated preview, ask user to confirm
+7. User adjustments → update elements.json → re-annotate
+8. **Bbox Calibration** (CRITICAL — see below)
+9. Extract:
    ```bash
-   python3 -m game_asset_tools extract --input design.png --elements elements.json --output-dir output/
+   python3 -m game_asset_tools extract --input design.png --elements elements.json --output-dir output/ --no-remove-bg --no-trim --padding 0
    ```
+10. **Quality Check** — Read each extracted asset, compare with original
+11. Fix any issues (see Post-Extract Quality Pipeline)
+12. For backgrounds with needs_inpaint=true, use MCP edit_image
+13. Update manifest, regenerate asset_manager.html
 
-9. For background elements with needs_inpaint=true, use MCP edit_image with the inpaint_prompt
+### CRITICAL: Bbox Calibration
 
-10. Show results, update manifest
+**Claude's visual bbox estimation has 20-50px error.** Never trust the first estimate. Always calibrate:
+
+1. **First pass**: estimate bbox visually, add generous padding
+2. **Test crop**: crop a small region with Python to verify position
+   ```python
+   img.crop((x1, y1, x2, y2)).save('output/.tmp/test_crop.png')
+   ```
+3. **Show to user**: Read the test crop, ask if position is correct
+4. **Adjust**: shift coordinates based on what you see
+5. **Repeat** until the crop matches the element exactly
+
+For **dense elements** (row of icons, button groups):
+- Crop the entire group first to see actual positions
+- Use pixel color scanning to find exact boundaries:
+  ```python
+  # Scan for gold border edge
+  for x in range(start, end):
+      r, g, b = arr[y, x]
+      if is_border_color(r, g, b):
+          print(f'Border at x={x}')
+  ```
+- Calculate spacing between elements from the scan results
 
 ### Element Detection Guidelines
 
-When analyzing a design image, look for:
-- **Characters**: human/creature figures, usually middle layer
-- **Icons**: small square/circular elements, skill icons, item icons
-- **UI elements**: buttons, bars, panels, frames, text labels
-- **Background**: the scene behind everything
-- **Shared components**: borders/frames that appear multiple times identically
+When analyzing a design image:
 
-Estimate bounding boxes as [left, top, right, bottom] in pixels.
-Mark elements that overlap others as higher layer.
+**Identify elements:**
+- **Characters**: human/creature figures, middle layer
+- **Icons**: small square/circular elements with borders, top layer
+- **UI elements**: buttons, bars, panels, text labels, top layer
+- **Background**: the full scene, bottom layer
+- **Shared components**: borders/frames appearing multiple times
+
+**Set needs_remove_bg correctly by type:**
+
+| Type | needs_remove_bg | Reason |
+|------|----------------|--------|
+| character | true | Need transparent PNG for game engine |
+| icon WITH border | **false** | Border is part of the asset |
+| icon WITHOUT border | true | Need to separate from background |
+| button (circular/shaped) | true | Need transparent PNG |
+| health/mana bar | false | Just crop the bar region tightly |
+| background | false | Keep as-is or inpaint |
+
+**Shared elements (IMPORTANT):**
+When multiple elements share the same border/frame (e.g., a row of skill icons with identical golden borders):
+1. Mark them in shared_assets
+2. The cleanest instance becomes the border template
+3. Other instances can reuse this border if their edges are contaminated
+
+### Post-Extract Quality Pipeline
+
+After extraction, check each asset against the original. Apply fixes in this priority order — **prefer pixel-level processing over AI, use AI only as last resort:**
+
+```
+Step 1: Visual check
+  Read each extracted asset, compare with original
+  Identify issues: edge contamination, incomplete borders, wrong content
+
+Step 2: Bbox adjustment (most common fix)
+  If content is cut off or includes neighboring elements:
+  → Adjust bbox coordinates and re-extract
+  → Use pixel scanning to find exact edges
+
+Step 3: Pixel-level cleanup (for minor contamination)
+  If small areas of background bleed into the asset:
+  → Use Python color filtering to remove contaminating pixels
+  → Set background-colored edge pixels to transparent
+  ```python
+  # Example: remove green forest pixels from icon edge
+  for x in range(width-1, width-15, -1):
+      if pixel_is_forest_green(arr[y, x]):
+          arr[y, x, 3] = 0  # make transparent
+  ```
+
+Step 4: Shared border template (for border contamination)
+  If an element's border is contaminated but another instance is clean:
+  → Extract border from the clean instance
+  → Composite: clean border + contaminated element's content
+  → Use border mask: outer N pixels from template, inner from target
+
+Step 5: AI repair (LAST RESORT — only when steps 2-4 fail)
+  When pixel-level fixes cannot solve the problem:
+  → Use mcp edit_image to fix the specific issue
+  → Prompt should be very specific: "Remove the green vegetation from the right edge"
+  → After AI repair, MUST use rembg for background removal (AI edit cannot create true transparency)
+  → Compare AI result with original to ensure style consistency is maintained
+  → If AI changes the style/proportions, reject and try a different approach
+```
+
+### AI Usage Minimization Rules
+
+1. **Never** use AI edit for background removal — always use rembg
+2. **Never** use AI to fix what can be fixed by adjusting bbox coordinates
+3. **Never** use AI to remove edge contamination that pixel color filtering can handle
+4. **Only** use AI for:
+   - Inpainting backgrounds (removing foreground from background layer)
+   - Completing missing/occluded parts that cannot be recovered from the source
+   - Style-level fixes that are impossible at pixel level
+5. After ANY AI edit, verify the result hasn't changed the asset's style or proportions
+
+### Size Normalization
+
+After extraction, if assets of the same type have different sizes (common for edge elements):
+```bash
+# Normalize all icons to same size
+python3 -m game_asset_tools resize --input icon.png --output icon.png --size 128x128 --mode contain
+```
+Use `contain` mode (not stretch) to preserve proportions.
 
 ## Asset Manager
 
