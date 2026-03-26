@@ -385,19 +385,45 @@ When project config has a `requirements` section, the asset manager page shows a
 
 ## Critical: Background Removal
 
-**MUST use `rembg` (Python) for background removal. AI image editing (Gemini/NanoBanana edit) CANNOT produce true alpha transparency** — it only changes the background to white/light color, which is NOT a transparent PNG.
+**Two-step approach: AI rewrite to white background → rembg to transparent.**
 
-If rembg is not installed:
-1. **First choice:** Install it: `pip3 install rembg`
-2. **Never** use AI edit as a "fallback" for background removal — it does not work
+rembg alone on complex backgrounds often damages the asset (removes swords, borders, thin details). AI edit alone cannot produce true alpha transparency. Combine both:
+
+### Strategy by Asset Type
+
+| Type | Strategy | Reason |
+|------|----------|--------|
+| Character (complex shape, weapons) | AI → white bg → rembg → trim | rembg alone loses weapons/details on complex backgrounds |
+| Icon with border | AI → white bg → rembg → trim | rembg alone removes the border frame |
+| Circular button | rembg directly → trim | Simple shape, rembg handles well |
+| Health/mana bar | No removal | Just crop tightly |
+| Background | No removal | Inpaint to remove foreground instead |
+
+### Two-Step Process (for characters and icons)
 
 ```bash
-# Correct: true transparent background
-python3 -m game_asset_tools remove_bg --input raw.png --output nobg.png
+# Step 1: AI rewrites background to white (preserves all asset details)
+# Use MCP edit_image:
+# prompt: "Change the background to pure white. Keep the [character/icon] exactly as is including all details."
 
-# WRONG: AI edit only makes background white, NOT transparent
-# mcp__gemini-image__edit_image "remove background" → still has opaque pixels
+# Step 2: rembg removes the simple white background → true alpha transparency
+python3 -m game_asset_tools remove_bg --input white_bg_version.png --output nobg.png
+
+# Step 3: trim transparent edges
+python3 -m game_asset_tools trim --input nobg.png --output final.png --padding 2
 ```
+
+### Direct rembg (for simple shapes only)
+
+```bash
+# Only for circular buttons, simple geometric shapes:
+python3 -m game_asset_tools remove_bg --input btn.png --output btn_nobg.png
+```
+
+### NEVER do:
+- `rembg` directly on complex scenes (forest bg + character) → loses details
+- AI edit "remove background" without rembg → no true transparency
+- `rembg` on icons with decorative borders → removes the border
 
 ## Model Failover
 
