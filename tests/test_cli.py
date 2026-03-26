@@ -113,3 +113,47 @@ def test_cli_extract(tmp_dir):
         capture_output=True, text=True,
     )
     assert result.returncode == 0
+
+
+def test_cli_version_save(tmp_dir):
+    asset_path = os.path.join(tmp_dir, "test.png")
+    Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(asset_path)
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "version", "save",
+         "--asset", asset_path, "--action", "generated"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert "v1" in result.stdout
+
+
+def test_cli_version_list(tmp_dir):
+    asset_path = os.path.join(tmp_dir, "test.png")
+    Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(asset_path)
+    subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "version", "save",
+         "--asset", asset_path, "--action", "generated"],
+        capture_output=True, text=True,
+    )
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "version", "list",
+         "--asset", asset_path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert "v1" in result.stdout
+
+
+def test_cli_manager(tmp_dir):
+    out_dir = os.path.join(tmp_dir, "output")
+    icons_dir = os.path.join(out_dir, "icons")
+    os.makedirs(icons_dir)
+    Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(os.path.join(icons_dir, "test.png"))
+    html_path = os.path.join(tmp_dir, "manager.html")
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "manager",
+         "--output-dir", out_dir, "--output", html_path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert os.path.exists(html_path)

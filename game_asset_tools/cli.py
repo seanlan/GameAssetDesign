@@ -153,6 +153,33 @@ def _cmd_extract(args):
         print(f"  {r['type']}: {r['name']} -> {r['output_path']}{flag}{shared}")
 
 
+def _cmd_version(args):
+    from game_asset_tools.version import VersionManager
+    vm = VersionManager(args.asset)
+    if args.version_action == "save":
+        v = vm.save_version(action=args.action, note=args.note or "")
+        print(f"Saved v{v}")
+    elif args.version_action == "list":
+        versions = vm.list_versions()
+        for v in versions:
+            note = f" - {v.get('note', '')}" if v.get('note') else ""
+            print(f"  v{v['version']}: {v['action']}{note} ({v.get('timestamp', '')[:19]})")
+    elif args.version_action == "rollback":
+        vm.rollback(args.to)
+        print(f"Rolled back to v{args.to}")
+    elif args.version_action == "compare":
+        vm.compare(args.v1, args.v2, args.output)
+        print(f"Comparison: {args.output}")
+
+
+def _cmd_manager(args):
+    from game_asset_tools.manager import generate_manager_html
+    import os
+    manifest = args.manifest if args.manifest and os.path.exists(args.manifest) else None
+    generate_manager_html(args.output_dir, manifest, args.output)
+    print(f"Manager: {args.output}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="game_asset_tools",
@@ -245,6 +272,30 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ext.add_argument("--no-trim", dest="do_trim", action="store_false", default=True)
     p_ext.add_argument("--padding", type=int, default=4, help="Crop padding pixels")
 
+    # --- version ---
+    p_ver = subparsers.add_parser("version", help="Manage asset versions")
+    ver_sub = p_ver.add_subparsers(dest="version_action")
+    vs = ver_sub.add_parser("save")
+    vs.add_argument("--asset", required=True)
+    vs.add_argument("--action", required=True)
+    vs.add_argument("--note", default="")
+    vl = ver_sub.add_parser("list")
+    vl.add_argument("--asset", required=True)
+    vr = ver_sub.add_parser("rollback")
+    vr.add_argument("--asset", required=True)
+    vr.add_argument("--to", type=int, required=True)
+    vc = ver_sub.add_parser("compare")
+    vc.add_argument("--asset", required=True)
+    vc.add_argument("--v1", type=int, required=True)
+    vc.add_argument("--v2", type=int, required=True)
+    vc.add_argument("--output", required=True)
+
+    # --- manager ---
+    p_mgr = subparsers.add_parser("manager", help="Generate asset manager HTML")
+    p_mgr.add_argument("--output-dir", dest="output_dir", required=True)
+    p_mgr.add_argument("--manifest", default=None)
+    p_mgr.add_argument("--output", required=True)
+
     return parser
 
 
@@ -259,6 +310,8 @@ _COMMAND_HANDLERS = {
     "trim": _cmd_trim,
     "annotate": _cmd_annotate,
     "extract": _cmd_extract,
+    "version": _cmd_version,
+    "manager": _cmd_manager,
 }
 
 
