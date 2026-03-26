@@ -124,6 +124,35 @@ def _cmd_preview(args):
     print(f"Preview: {args.output}")
 
 
+def _cmd_trim(args):
+    from game_asset_tools.trim import trim_transparent
+    result = trim_transparent(args.input, args.output, padding=args.padding)
+    if result:
+        print(f"Trimmed: {args.output}")
+    else:
+        print("Image is fully transparent, no output produced")
+
+
+def _cmd_annotate(args):
+    from game_asset_tools.annotate import annotate_image
+    annotate_image(args.input, args.elements, args.output)
+    print(f"Annotated: {args.output}")
+
+
+def _cmd_extract(args):
+    from game_asset_tools.extract import extract_elements, load_elements
+    elements = load_elements(args.elements)
+    results = extract_elements(
+        source_path=args.input, elements=elements, output_dir=args.output_dir,
+        remove_bg=args.remove_bg, trim=args.do_trim, crop_padding=args.padding,
+    )
+    print(f"Extracted {len(results)} elements")
+    for r in results:
+        flag = " [needs inpaint]" if r.get("needs_inpaint") else ""
+        shared = " [shared]" if r.get("is_shared") else ""
+        print(f"  {r['type']}: {r['name']} -> {r['output_path']}{flag}{shared}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="game_asset_tools",
@@ -195,6 +224,27 @@ def _build_parser() -> argparse.ArgumentParser:
     p_preview.add_argument("--output", required=True, help="Output HTML file path")
     p_preview.add_argument("--title", help="Preview page title")
 
+    # --- trim ---
+    p_trim = subparsers.add_parser("trim", help="Trim transparent edges from an image")
+    p_trim.add_argument("--input", required=True, help="Input image path")
+    p_trim.add_argument("--output", required=True, help="Output image path")
+    p_trim.add_argument("--padding", type=int, default=0, help="Pixels of padding to keep")
+
+    # --- annotate ---
+    p_ann = subparsers.add_parser("annotate", help="Generate annotated preview of detected elements")
+    p_ann.add_argument("--input", required=True, help="Source design image path")
+    p_ann.add_argument("--elements", required=True, help="Path to elements.json")
+    p_ann.add_argument("--output", required=True, help="Output annotated image path")
+
+    # --- extract ---
+    p_ext = subparsers.add_parser("extract", help="Extract elements from a design image")
+    p_ext.add_argument("--input", required=True, help="Source design image path")
+    p_ext.add_argument("--elements", required=True, help="Path to elements.json")
+    p_ext.add_argument("--output-dir", dest="output_dir", required=True, help="Output directory")
+    p_ext.add_argument("--no-remove-bg", dest="remove_bg", action="store_false", default=True)
+    p_ext.add_argument("--no-trim", dest="do_trim", action="store_false", default=True)
+    p_ext.add_argument("--padding", type=int, default=4, help="Crop padding pixels")
+
     return parser
 
 
@@ -206,6 +256,9 @@ _COMMAND_HANDLERS = {
     "video_to_frames": _cmd_video_to_frames,
     "tileset": _cmd_tileset,
     "preview": _cmd_preview,
+    "trim": _cmd_trim,
+    "annotate": _cmd_annotate,
+    "extract": _cmd_extract,
 }
 
 

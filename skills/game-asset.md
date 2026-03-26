@@ -159,6 +159,56 @@ Build the MCP prompt by combining:
 
 Outputs to configured `output.base_dir` by type. Naming follows config template. Update manifest after each generation.
 
+## Extract Mode: Design Image Splitting
+
+Triggered when user provides a design image and asks to extract assets from it.
+
+### Flow
+
+1. User provides image path: "/game-asset 从这张图里提取素材"
+2. Read the image with Read tool to analyze visually
+3. Identify all elements with their:
+   - Name, type (character/icon/ui/background/sprite/tileset)
+   - Bounding box [left, top, right, bottom]
+   - Layer (bottom/middle/top)
+   - Whether it needs background removal
+   - Whether it's a shared component
+
+4. Write elements.json to output/.tmp/elements.json
+
+5. Generate annotated preview:
+   ```bash
+   python3 -m game_asset_tools annotate --input design.png --elements elements.json --output annotated.png
+   ```
+
+6. Show annotated preview via Read tool, ask user to confirm
+
+7. User adjustments (re-annotate after each change):
+   - "删掉 3 号" → remove from elements.json
+   - "2 号改名 ice_arrow" → update name
+   - "1 号往右扩 20px" → adjust bbox
+
+8. On confirmation, extract:
+   ```bash
+   python3 -m game_asset_tools extract --input design.png --elements elements.json --output-dir output/
+   ```
+
+9. For background elements with needs_inpaint=true, use MCP edit_image with the inpaint_prompt
+
+10. Show results, update manifest
+
+### Element Detection Guidelines
+
+When analyzing a design image, look for:
+- **Characters**: human/creature figures, usually middle layer
+- **Icons**: small square/circular elements, skill icons, item icons
+- **UI elements**: buttons, bars, panels, frames, text labels
+- **Background**: the scene behind everything
+- **Shared components**: borders/frames that appear multiple times identically
+
+Estimate bounding boxes as [left, top, right, bottom] in pixels.
+Mark elements that overlap others as higher layer.
+
 ## Critical: Background Removal
 
 **MUST use `rembg` (Python) for background removal. AI image editing (Gemini/NanoBanana edit) CANNOT produce true alpha transparency** — it only changes the background to white/light color, which is NOT a transparent PNG.

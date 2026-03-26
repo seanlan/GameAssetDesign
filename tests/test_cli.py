@@ -44,3 +44,72 @@ def test_cli_preview(tmp_dir):
 def test_cli_unknown_command():
     result = subprocess.run([sys.executable, "-m", "game_asset_tools", "nonexistent"], capture_output=True, text=True)
     assert result.returncode != 0
+
+
+def test_cli_trim(tmp_dir):
+    img = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    for x in range(50, 150):
+        for y in range(50, 150):
+            img.putpixel((x, y), (255, 0, 0, 255))
+    in_path = os.path.join(tmp_dir, "input.png")
+    img.save(in_path)
+    out_path = os.path.join(tmp_dir, "trimmed.png")
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "trim",
+         "--input", in_path, "--output", out_path, "--padding", "2"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert os.path.exists(out_path)
+    trimmed = Image.open(out_path)
+    assert trimmed.size[0] < 200
+
+
+def test_cli_annotate(tmp_dir):
+    import json
+    src_path = os.path.join(tmp_dir, "source.png")
+    Image.new("RGB", (400, 300), (200, 200, 200)).save(src_path)
+    elements = {
+        "source": "source.png", "source_size": [400, 300],
+        "layers": {"middle": [{"name": "hero", "type": "character", "bbox": [50, 50, 200, 250]}]},
+        "shared_assets": [],
+    }
+    elements_path = os.path.join(tmp_dir, "elements.json")
+    with open(elements_path, "w") as f:
+        json.dump(elements, f)
+    out_path = os.path.join(tmp_dir, "annotated.png")
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "annotate",
+         "--input", src_path, "--elements", elements_path, "--output", out_path],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert os.path.exists(out_path)
+
+
+def test_cli_extract(tmp_dir):
+    import json
+    src_path = os.path.join(tmp_dir, "source.png")
+    img = Image.new("RGBA", (400, 300), (200, 200, 200, 255))
+    for x in range(100, 200):
+        for y in range(100, 200):
+            img.putpixel((x, y), (255, 0, 0, 255))
+    img.save(src_path)
+    elements = {
+        "source": src_path, "source_size": [400, 300],
+        "layers": {"middle": [
+            {"name": "hero", "type": "character", "bbox": [100, 100, 200, 200],
+             "needs_remove_bg": False, "needs_trim": False}
+        ]},
+        "shared_assets": [],
+    }
+    elements_path = os.path.join(tmp_dir, "elements.json")
+    with open(elements_path, "w") as f:
+        json.dump(elements, f)
+    out_dir = os.path.join(tmp_dir, "output")
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "extract",
+         "--input", src_path, "--elements", elements_path, "--output-dir", out_dir],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
