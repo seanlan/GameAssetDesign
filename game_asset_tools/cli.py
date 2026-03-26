@@ -180,6 +180,19 @@ def _cmd_manager(args):
     print(f"Manager: {args.output}")
 
 
+def _cmd_export(args):
+    from game_asset_tools.export import export_for_engine
+    result = export_for_engine(args.engine, args.input_dir, args.export_dir)
+    print(f"Exported {result['total']} files for {args.engine} -> {args.export_dir}")
+
+
+def _cmd_atlas(args):
+    from game_asset_tools.atlas import pack_atlas
+    max_size = _parse_size(args.max_size)
+    pack_atlas(args.input_dir, args.output, args.meta, max_size=max_size, padding=args.padding, meta_format=args.format)
+    print(f"Atlas packed: {args.output}, meta: {args.meta}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="game_asset_tools",
@@ -296,6 +309,21 @@ def _build_parser() -> argparse.ArgumentParser:
     p_mgr.add_argument("--manifest", default=None)
     p_mgr.add_argument("--output", required=True)
 
+    # --- export ---
+    p_exp = subparsers.add_parser("export", help="Export assets for game engine")
+    p_exp.add_argument("--engine", required=True, choices=["unity", "godot", "cocos", "web"])
+    p_exp.add_argument("--input-dir", dest="input_dir", required=True)
+    p_exp.add_argument("--export-dir", dest="export_dir", required=True)
+
+    # --- atlas ---
+    p_atl = subparsers.add_parser("atlas", help="Pack sprites into texture atlas")
+    p_atl.add_argument("--input-dir", dest="input_dir", required=True)
+    p_atl.add_argument("--output", required=True)
+    p_atl.add_argument("--meta", required=True)
+    p_atl.add_argument("--max-size", dest="max_size", default="2048x2048")
+    p_atl.add_argument("--padding", type=int, default=2)
+    p_atl.add_argument("--format", default="generic", choices=["generic", "phaser"])
+
     return parser
 
 
@@ -312,6 +340,8 @@ _COMMAND_HANDLERS = {
     "extract": _cmd_extract,
     "version": _cmd_version,
     "manager": _cmd_manager,
+    "export": _cmd_export,
+    "atlas": _cmd_atlas,
 }
 
 

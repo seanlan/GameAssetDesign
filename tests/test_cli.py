@@ -157,3 +157,33 @@ def test_cli_manager(tmp_dir):
     )
     assert result.returncode == 0
     assert os.path.exists(html_path)
+
+
+def test_cli_export(tmp_dir):
+    input_dir = os.path.join(tmp_dir, "output")
+    icons_dir = os.path.join(input_dir, "icons")
+    os.makedirs(icons_dir)
+    Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(os.path.join(icons_dir, "test.png"))
+    export_dir = os.path.join(tmp_dir, "web_export")
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "export",
+         "--engine", "web", "--input-dir", input_dir, "--export-dir", export_dir],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+
+
+def test_cli_atlas(tmp_dir):
+    sprites_dir = os.path.join(tmp_dir, "sprites")
+    os.makedirs(sprites_dir)
+    for i in range(4):
+        Image.new("RGBA", (32, 32), (i * 60, 100, 100, 255)).save(os.path.join(sprites_dir, f"s{i}.png"))
+    output = os.path.join(tmp_dir, "atlas.png")
+    meta = os.path.join(tmp_dir, "atlas.json")
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "atlas",
+         "--input-dir", sprites_dir, "--output", output, "--meta", meta, "--max-size", "512x512"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert os.path.exists(output)
