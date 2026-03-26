@@ -126,3 +126,32 @@ def test_manager_no_manifest(tmp_dir):
     with open(html_path) as f:
         html = f.read()
     assert "test.png" in html
+
+
+def test_manager_with_progress_dashboard(tmp_dir):
+    out_dir = os.path.join(tmp_dir, "output")
+    icons_dir = os.path.join(out_dir, "icons")
+    os.makedirs(icons_dir)
+    Image.new("RGBA", (64, 64), (200, 100, 100, 255)).save(os.path.join(icons_dir, "icon_fireball_64.png"))
+
+    import yaml
+    config_path = os.path.join(tmp_dir, "project.yaml")
+    config = {
+        "project": {"name": "Test RPG", "engine": "unity"},
+        "style": {"preset": "anime", "keywords": "", "palette": []},
+        "assets": {},
+        "output": {"base_dir": "output/", "naming": "{type}_{name}"},
+        "requirements": {
+            "icons": [{"name": "fireball"}, {"name": "ice_arrow"}, {"name": "healing"}]
+        },
+    }
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+
+    html_path = os.path.join(tmp_dir, "manager.html")
+    generate_manager_html(out_dir, None, html_path, project_config=config_path)
+
+    with open(html_path) as f:
+        html = f.read()
+    assert "1/3" in html or "33%" in html
+    assert "ice_arrow" in html or "healing" in html

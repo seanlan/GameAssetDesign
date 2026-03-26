@@ -91,11 +91,64 @@ def _asset_to_b64(path: str) -> str:
     return f"data:{mime};base64,{data}"
 
 
+def _build_dashboard_html(progress: dict) -> str:
+    """Generate progress dashboard HTML section from check_progress() result."""
+    if not progress:
+        return ""
+
+    rows = ""
+    total_done = 0
+    total_all = 0
+    all_missing = []
+
+    for category, data in sorted(progress.items()):
+        done = data["done"]
+        total = data["total"]
+        total_done += done
+        total_all += total
+        pct = int(done / total * 100) if total > 0 else 0
+        missing = data.get("missing", [])
+        all_missing.extend([(category, m) for m in missing])
+        bar_color = "#4caf50" if pct == 100 else ("#e94560" if pct == 0 else "#f0a020")
+        rows += f"""
+  <div class="dash-row">
+    <span class="dash-cat">{category}</span>
+    <div class="dash-bar-wrap">
+      <div class="dash-bar" style="width:{pct}%;background:{bar_color}"></div>
+    </div>
+    <span class="dash-pct">{done}/{total}</span>
+  </div>"""
+
+    # Overall summary
+    overall_pct = int(total_done / total_all * 100) if total_all > 0 else 0
+
+    # Missing items list (up to 20)
+    missing_items_html = ""
+    if all_missing:
+        items_html = "".join(
+            f'<span class="missing-tag">{cat}: {name}</span>'
+            for cat, name in all_missing[:20]
+        )
+        if len(all_missing) > 20:
+            items_html += f'<span class="missing-tag">...+{len(all_missing)-20} more</span>'
+        missing_items_html = f'<div class="missing-list"><strong>Missing:</strong> {items_html}</div>'
+
+    return f"""
+<div class="dashboard">
+  <div class="dash-header">
+    <span>Progress: {total_done}/{total_all} ({overall_pct}%)</span>
+  </div>
+  {rows}
+  {missing_items_html}
+</div>"""
+
+
 def generate_manager_html(
     output_dir: str,
     manifest_path: str | None,
     html_path: str,
     project_name: str = "",
+    project_config: str | None = None,
 ) -> None:
     """Generate the unified asset manager HTML page."""
     assets = _scan_assets(output_dir)
@@ -107,6 +160,19 @@ def generate_manager_html(
 
     if not project_name:
         project_name = "Game Assets"
+
+    # Build progress dashboard if project_config provided
+    dashboard_html = ""
+    if project_config and os.path.exists(project_config):
+        from game_asset_tools.config import load_config, get_requirements, check_progress
+        try:
+            cfg = load_config(project_config)
+            requirements = get_requirements(cfg)
+            if requirements:
+                progress = check_progress(requirements, output_dir)
+                dashboard_html = _build_dashboard_html(progress)
+        except Exception:
+            pass  # Dashboard is optional; don't fail HTML generation
 
     # Build asset cards HTML
     cards_html = ""
@@ -200,6 +266,15 @@ body {{ font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f1a;
 .submit-btn {{ background: #e94560; color: #fff; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }}
 .submit-btn:hover {{ background: #c73650; }}
 #manager-tasks-data {{ display: none; }}
+.dashboard {{ background: #16213e; border: 1px solid #2a2a4a; margin: 12px 24px; border-radius: 8px; padding: 12px 16px; }}
+.dash-header {{ font-size: 13px; font-weight: 600; color: #e94560; margin-bottom: 8px; }}
+.dash-row {{ display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }}
+.dash-cat {{ font-size: 11px; color: #aaa; width: 100px; flex-shrink: 0; text-transform: capitalize; }}
+.dash-bar-wrap {{ flex: 1; background: #0a0a1a; border-radius: 4px; height: 10px; overflow: hidden; }}
+.dash-bar {{ height: 100%; border-radius: 4px; transition: width 0.3s; }}
+.dash-pct {{ font-size: 11px; color: #ccc; width: 40px; text-align: right; flex-shrink: 0; }}
+.missing-list {{ margin-top: 8px; font-size: 11px; color: #999; }}
+.missing-tag {{ display: inline-block; background: #2a1a2e; border: 1px solid #4a2a5a; border-radius: 3px; padding: 1px 6px; margin: 2px; color: #d08aff; }}
 </style>
 </head>
 <body>
@@ -211,6 +286,7 @@ body {{ font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f0f1a;
   <button class="fbtn" onclick="selectAll()">Select All</button>
   <button class="fbtn" onclick="deselectAll()">Deselect</button>
 </div>
+{dashboard_html}
 <div class="grid" id="grid">{cards_html}
 </div>
 <div class="actions" id="actions">
