@@ -273,13 +273,40 @@ Step 4: Shared border template (for border contamination)
   → Composite: clean border + contaminated element's content
   → Use border mask: outer N pixels from template, inner from target
 
-Step 5: AI repair (LAST RESORT — only when steps 2-4 fail)
-  When pixel-level fixes cannot solve the problem:
-  → Use mcp edit_image to fix the specific issue
-  → Prompt should be very specific: "Remove the green vegetation from the right edge"
-  → After AI repair, MUST use rembg for background removal (AI edit cannot create true transparency)
-  → Compare AI result with original to ensure style consistency is maintained
-  → If AI changes the style/proportions, reject and try a different approach
+Step 5: AI completion (for truncated/incomplete assets)
+  When an element is cut off at the image edge (foot missing, arm truncated, border incomplete):
+  → This CANNOT be fixed by bbox adjustment (the content doesn't exist in the source image)
+  → Use AI edit_image to complete the missing part:
+    prompt: "The character's [part] is cut off. Complete the missing [part] to match the existing style."
+  → After AI completion, re-run the full chroma key → removal pipeline:
+    1. AI edit to chroma key background (green/magenta)
+    2. rembg or Python color removal
+    3. trim
+  → Verify the completed part matches the original style
+
+Step 6: AI repair (for other issues that steps 2-5 can't fix)
+  → Use mcp edit_image for specific fixes
+  → After AI repair, re-run chroma key → removal pipeline
+  → Compare with original to ensure style consistency
+  → If AI changes style/proportions, reject and retry
+```
+
+### Incomplete Asset Detection
+
+After extraction, check if any asset is truncated at image edges:
+
+```
+Signs of truncation:
+- Element bbox touches or is within 10px of image edge
+- Content appears "cut off" (limbs, borders, weapons ending abruptly at image boundary)
+- Bottom of characters missing feet/legs
+- Side of icons missing border sections
+
+When detected:
+1. Flag to user: "角色底部被截断（右脚缺失），需要AI补全吗？"
+2. If yes → Step 5 (AI completion)
+3. The AI completion prompt should reference the EXISTING content for style matching:
+   "Complete the missing right boot to match the left boot style. Same brown leather, metal guard, battle stance."
 ```
 
 ### AI Usage Minimization Rules
