@@ -238,27 +238,25 @@ When analyzing a design image:
 
 **Shared border/frame separation (IMPORTANT):**
 When icons share the same border, extract THREE types of assets:
-1. `icon_border.png` — pure border frame with transparent center (reusable)
-2. `icon_fire.png` etc. — pure content without border (swappable)
-3. Game engine composites border + content at runtime
+1. `icon_border.png` — pure border frame with transparent center and outer (reusable)
+2. `icon_fire.png` etc. — inner content WITH its background color plate, WITHOUT border (swappable)
+3. Game engine composites: content UNDER border at runtime
 
-**How to separate border and content:**
+**Content icons MUST keep their background plate** (the dark/colored fill behind the content).
+Without it, the border's decorative corners show through transparent gaps and the icon looks broken.
+
+**How to separate:**
 ```
-# Step 1: AI removes content, keeps border on magenta background
-edit_image prompt: "Remove the [fire] content inside this icon, keep ONLY the golden
-border frame. Center area should become solid bright magenta (#FF00FF)."
+# Border: AI replaces inner content with magenta → Python chroma key removes magenta
+edit_image: "Remove the [content] inside, keep ONLY the golden border frame.
+             Center should become solid magenta (#FF00FF)."
+Then: Python removes magenta (magenta_score = (R+B)/2 - G > 60 → transparent)
+Then: Remove dark outer pixels (forest residue), trim
 
-# Step 2: AI removes border, keeps content on magenta background
-edit_image prompt: "Remove the golden border frame. Keep ONLY the [fire] content
-in the center on solid bright magenta (#FF00FF) background."
-
-# Step 3: Python chroma key removes magenta from both
-magenta_score = (R + B) / 2 - G
-pixels where magenta_score > 60 → transparent
-edge blend: 30-60 → gradual transparency
-
-# Step 4: For border — also remove dark outer pixels (forest residue)
-# Step 5: trim both
+# Content: Simple Python crop of the inner area (border ~12px on each side)
+# Do NOT remove the background plate — the dark fill is part of the asset
+inner_bbox = (original_left + 12, original_top + 12, original_right - 12, original_bottom - 12)
+content = img.crop(inner_bbox)  # Keeps background plate, no AI needed
 ```
 
 ### Post-Extract Quality Pipeline
