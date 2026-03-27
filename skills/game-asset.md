@@ -385,45 +385,72 @@ When project config has a `requirements` section, the asset manager page shows a
 
 ## Critical: Background Removal
 
-**Two-step approach: AI rewrite to white background → rembg to transparent.**
+**AI chroma key + rembg/Python color removal. Choose background color that contrasts with asset content.**
 
-rembg alone on complex backgrounds often damages the asset (removes swords, borders, thin details). AI edit alone cannot produce true alpha transparency. Combine both:
+rembg alone on complex backgrounds damages assets (removes swords, borders). AI edit alone cannot produce true alpha. The key insight: **use AI to replace background with a high-contrast chroma key color, then remove that color precisely.**
 
 ### Strategy by Asset Type
 
-| Type | Strategy | Reason |
-|------|----------|--------|
-| Character (complex shape, weapons) | AI → white bg → rembg → trim | rembg alone loses weapons/details on complex backgrounds |
-| Icon with border | AI → white bg → rembg → trim | rembg alone removes the border frame |
-| Circular button | rembg directly → trim | Simple shape, rembg handles well |
-| Health/mana bar | No removal | Just crop tightly |
-| Background | No removal | Inpaint to remove foreground instead |
+| Type | Chroma Key Color | Removal Method | Reason |
+|------|-----------------|----------------|--------|
+| Character (warm tones: red hair, brown armor) | **Green (#00FF00)** | AI → green bg → rembg → trim | Green contrasts maximally with warm tones |
+| Character (cool tones: blue armor, ice) | **Magenta (#FF00FF)** | AI → magenta bg → rembg → trim | Magenta contrasts with blues |
+| Icon with border | **Magenta (#FF00FF)** | AI → magenta bg → **Python chroma key** → trim | rembg damages icons; Python color removal is precise |
+| Circular button | — | rembg directly → trim | Simple shape, rembg handles well |
+| Health/mana bar | — | No removal, just crop tightly | |
+| Background | — | AI inpaint to remove foreground | |
 
-### Two-Step Process (for characters and icons)
+### Chroma Key Color Selection Rule
+
+Pick the color MOST DIFFERENT from the asset's dominant colors:
+- Asset is warm (red/orange/brown/gold) → use **Green #00FF00**
+- Asset is cool (blue/cyan/purple) → use **Magenta #FF00FF**
+- Asset is green → use **Magenta #FF00FF**
+- Mixed/unsure → use **Magenta #FF00FF** (safe default)
+
+**NEVER use white** — white blends with highlights, sword glints, and light effects, causing rembg to remove them.
+
+### For Characters (rembg after chroma key)
 
 ```bash
-# Step 1: AI rewrites background to white (preserves all asset details)
-# Use MCP edit_image:
-# prompt: "Change the background to pure white. Keep the [character/icon] exactly as is including all details."
+# Step 1: AI replaces background with chroma key color
+# MCP edit_image prompt:
+# "Change the background to solid bright green (#00FF00). Keep the character exactly as is with ALL details: sword, armor, hair, weapons."
 
-# Step 2: rembg removes the simple white background → true alpha transparency
-python3 -m game_asset_tools remove_bg --input white_bg_version.png --output nobg.png
+# Step 2: rembg removes the solid color background
+python3 -m game_asset_tools remove_bg --input greenscreen.png --output nobg.png
 
-# Step 3: trim transparent edges
-python3 -m game_asset_tools trim --input nobg.png --output final.png --padding 2
+# Step 3: trim
+python3 -m game_asset_tools trim --input nobg.png --output final.png --padding 4
 ```
 
-### Direct rembg (for simple shapes only)
+### For Icons with Borders (Python chroma key, NOT rembg)
 
-```bash
-# Only for circular buttons, simple geometric shapes:
-python3 -m game_asset_tools remove_bg --input btn.png --output btn_nobg.png
+rembg destroys icon borders and internal content. Use Python color-distance removal instead:
+
+```python
+# Step 1: AI replaces corners outside border with magenta
+# Step 2: Python removes magenta pixels by color distance
+import numpy as np
+from PIL import Image
+
+img = Image.open('icon_magenta.png').convert('RGBA')
+arr = np.array(img, dtype=np.float32)
+# Distance to magenta (255, 0, 255)
+dist = np.sqrt((arr[:,:,0]-255)**2 + arr[:,:,1]**2 + (arr[:,:,2]-255)**2)
+# Close to magenta → transparent
+arr[dist < 100, 3] = 0
+# Edge blend
+edge = (dist >= 100) & (dist < 130)
+arr[edge, 3] = ((dist[edge] - 100) / 30 * 255).clip(0, 255)
+Image.fromarray(arr.astype(np.uint8)).save('icon_final.png')
 ```
 
 ### NEVER do:
-- `rembg` directly on complex scenes (forest bg + character) → loses details
-- AI edit "remove background" without rembg → no true transparency
-- `rembg` on icons with decorative borders → removes the border
+- `rembg` directly on complex scenes → loses weapons/details
+- `rembg` on icons with borders → destroys the border and content
+- AI edit "remove background" without follow-up → no true transparency
+- Use white as chroma key → blends with highlights
 
 ## Model Failover
 
