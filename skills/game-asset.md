@@ -276,13 +276,15 @@ Step 4: Shared border template (for border contamination)
 Step 5: AI completion (for truncated/incomplete assets)
   When an element is cut off at the image edge (foot missing, arm truncated, border incomplete):
   → This CANNOT be fixed by bbox adjustment (the content doesn't exist in the source image)
-  → Use AI edit_image to complete the missing part:
-    prompt: "The character's [part] is cut off. Complete the missing [part] to match the existing style."
-  → After AI completion, re-run the full chroma key → removal pipeline:
-    1. AI edit to chroma key background (green/magenta)
-    2. rembg or Python color removal
-    3. trim
-  → Verify the completed part matches the original style
+  → **Best approach: one-shot redraw on chroma key background** (combines completion + bg removal):
+    Use AI edit_image on the ORIGINAL CROP (with background, before any removal):
+    prompt: "Redraw this exact [character] as complete full-body game asset on solid bright green (#00FF00) background.
+             IMPORTANT: Entire character fully visible from top of hair to bottom of BOTH feet on the ground.
+             Keep exact same design: [list all visual details from the original].
+             Same anime art style. Same pose."
+  → Then rembg → trim(padding=10)
+  → **Do NOT do it in 2 steps** (first complete, then change bg) — one-shot is better for style consistency
+  → For icons: use magenta #FF00FF instead of green, then Python chroma key removal
 
 Step 6: AI repair (for other issues that steps 2-5 can't fix)
   → Use mcp edit_image for specific fixes
@@ -309,16 +311,25 @@ When detected:
    "Complete the missing right boot to match the left boot style. Same brown leather, metal guard, battle stance."
 ```
 
-### AI Usage Minimization Rules
+### AI Usage Guidelines
 
-1. **Never** use AI edit for background removal — always use rembg
-2. **Never** use AI to fix what can be fixed by adjusting bbox coordinates
-3. **Never** use AI to remove edge contamination that pixel color filtering can handle
-4. **Only** use AI for:
-   - Inpainting backgrounds (removing foreground from background layer)
-   - Completing missing/occluded parts that cannot be recovered from the source
-   - Style-level fixes that are impossible at pixel level
-5. After ANY AI edit, verify the result hasn't changed the asset's style or proportions
+Use AI where it produces better results. The goal is quality, not minimizing AI calls.
+
+**AI excels at:**
+- Completing truncated assets (one-shot redraw on chroma key bg)
+- Changing backgrounds to chroma key colors
+- Inpainting (removing foreground from background layer)
+- Style-level fixes
+
+**Prefer Python/bbox for:**
+- Precise coordinate-based cropping
+- Chroma key color removal (for icons — Python is more precise than rembg)
+- Size normalization and trimming
+
+**Workflow principle:** Combine AI and Python in one efficient pipeline:
+- AI does creative work (redraw, complete, change bg color)
+- Python/rembg does precise work (color removal, trim, resize)
+- Minimize total steps — one-shot > multi-step when possible
 
 ### Size Normalization
 
