@@ -431,9 +431,8 @@ rembg alone on complex backgrounds damages assets (removes swords, borders). AI 
 
 | Type | Chroma Key Color | Removal Method | Reason |
 |------|-----------------|----------------|--------|
-| Character (warm tones: red hair, brown armor) | **Green (#00FF00)** | AI → green bg → rembg → trim | Green contrasts maximally with warm tones |
-| Character (cool tones: blue armor, ice) | **Magenta (#FF00FF)** | AI → magenta bg → rembg → trim | Magenta contrasts with blues |
-| Icon with border | **Magenta (#FF00FF)** | AI → magenta bg → **Python chroma key** → trim | rembg damages icons; Python color removal is precise |
+| Character (any) | **Green (#00FF00)** | AI → green bg → **Python chroma key + despill** | rembg destroys swords/glow effects; Python preserves all details |
+| Icon with border | **Magenta (#FF00FF)** | AI → magenta bg → **Python chroma key** | rembg damages icons; Python is precise |
 | Circular button | — | rembg directly → trim | Simple shape, rembg handles well |
 | Health/mana bar | — | No removal, just crop tightly | |
 | Background | — | AI inpaint to remove foreground | |
@@ -448,18 +447,46 @@ Pick the color MOST DIFFERENT from the asset's dominant colors:
 
 **NEVER use white** — white blends with highlights, sword glints, and light effects, causing rembg to remove them.
 
-### For Characters (rembg after chroma key)
+### For Characters (Python chroma key, NOT rembg)
+
+rembg destroys semi-transparent/glowing elements (sword blades, magic effects, light particles). Always use Python chroma key for characters.
 
 ```bash
-# Step 1: AI replaces background with chroma key color
+# Step 1: Crop with generous bbox (include full sword, both feet, even if UI elements are included)
+# bbox must cover ALL parts — better too large than too small
+
+# Step 2: AI replaces background with green chroma key + removes UI elements
 # MCP edit_image prompt:
-# "Change the background to solid bright green (#00FF00). Keep the character exactly as is with ALL details: sword, armor, hair, weapons."
+# "Replace ONLY the forest/background with solid bright green (#00FF00).
+#  Also remove [UI elements like HP bar, damage numbers].
+#  Keep the character EXACTLY as is — do not change ANY detail including
+#  the complete sword blade with glow effects, both feet, all armor."
 
-# Step 2: rembg removes the solid color background
-python3 -m game_asset_tools remove_bg --input greenscreen.png --output nobg.png
+# Step 3: Python chroma key removal (green → transparent)
+python3 -c "
+import numpy as np
+from PIL import Image
+img = Image.open('greenscreen.png').convert('RGBA')
+arr = np.array(img, dtype=np.float32)
+r, g, b = arr[:,:,0], arr[:,:,1], arr[:,:,2]
 
-# Step 3: trim
-python3 -m game_asset_tools trim --input nobg.png --output final.png --padding 4
+# Remove green screen pixels
+dist = np.sqrt(r**2 + (g-255)**2 + b**2)
+arr[dist < 180, 3] = 0  # fully transparent
+edge = (dist >= 180) & (dist < 220)
+arr[edge, 3] = ((dist[edge]-180)/40*255).clip(0,255)  # edge blend
+
+# Green spill correction (despill)
+mask = (g > r*1.3) & (g > b*1.3) & (g > 120) & (arr[:,:,3] > 128)
+arr[mask, 1] = (r[mask] + b[mask]) / 2  # G = avg(R,B)
+very_green = (g > 200) & (r < 100) & (b < 100)
+arr[very_green, 3] = 0
+
+Image.fromarray(arr.astype(np.uint8)).save('nobg.png')
+"
+
+# Step 4: trim
+python3 -m game_asset_tools trim --input nobg.png --output final.png --padding 6
 ```
 
 ### For Icons with Borders (Python chroma key, NOT rembg)
@@ -485,10 +512,11 @@ Image.fromarray(arr.astype(np.uint8)).save('icon_final.png')
 ```
 
 ### NEVER do:
-- `rembg` directly on complex scenes → loses weapons/details
+- `rembg` on characters with weapons/glow effects → loses sword blades, magic particles
 - `rembg` on icons with borders → destroys the border and content
 - AI edit "remove background" without follow-up → no true transparency
 - Use white as chroma key → blends with highlights
+- Crop bbox too tight → missing feet, sword tips. Always crop generous, AI will clean up UI elements
 
 ## Model Failover
 
