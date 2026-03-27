@@ -236,11 +236,30 @@ When analyzing a design image:
 | health/mana bar | false | Just crop the bar region tightly |
 | background | false | Keep as-is or inpaint |
 
-**Shared elements (IMPORTANT):**
-When multiple elements share the same border/frame (e.g., a row of skill icons with identical golden borders):
-1. Mark them in shared_assets
-2. The cleanest instance becomes the border template
-3. Other instances can reuse this border if their edges are contaminated
+**Shared border/frame separation (IMPORTANT):**
+When icons share the same border, extract THREE types of assets:
+1. `icon_border.png` — pure border frame with transparent center (reusable)
+2. `icon_fire.png` etc. — pure content without border (swappable)
+3. Game engine composites border + content at runtime
+
+**How to separate border and content:**
+```
+# Step 1: AI removes content, keeps border on magenta background
+edit_image prompt: "Remove the [fire] content inside this icon, keep ONLY the golden
+border frame. Center area should become solid bright magenta (#FF00FF)."
+
+# Step 2: AI removes border, keeps content on magenta background
+edit_image prompt: "Remove the golden border frame. Keep ONLY the [fire] content
+in the center on solid bright magenta (#FF00FF) background."
+
+# Step 3: Python chroma key removes magenta from both
+magenta_score = (R + B) / 2 - G
+pixels where magenta_score > 60 → transparent
+edge blend: 30-60 → gradual transparency
+
+# Step 4: For border — also remove dark outer pixels (forest residue)
+# Step 5: trim both
+```
 
 ### Post-Extract Quality Pipeline
 
