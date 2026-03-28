@@ -1,0 +1,20 @@
+{
+  "name": "game-asset-design",
+  "description": "Game asset design and extraction skill for Claude Code. Generate, extract, and manage 2D game assets with AI image generation and Python post-processing.",
+  "version": "1.0.0",
+  "author": {
+    "name": "lanjinmin"
+  },
+  "repository": "https://github.com/lanjinmin/GameAssetDesign",
+  "license": "MIT",
+  "keywords": [
+    "game-assets",
+    "sprite",
+    "icon",
+    "ui",
+    "tileset",
+    "extract",
+    "2d-game",
+    "image-processing"
+  ]
+}

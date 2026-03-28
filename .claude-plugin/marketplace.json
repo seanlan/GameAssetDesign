@@ -1,0 +1,15 @@
+{
+  "name": "game-asset-design",
+  "description": "Game asset design and extraction toolkit",
+  "owner": {
+    "name": "lanjinmin"
+  },
+  "plugins": [
+    {
+      "name": "game-asset-design",
+      "description": "Game asset design and extraction skill for Claude Code",
+      "version": "1.0.0",
+      "source": "./"
+    }
+  ]
+}
