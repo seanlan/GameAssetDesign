@@ -23,3 +23,8 @@ python3 -m game_asset_tools --help
 ```
 
 然后在 Claude Code 中使用 `/game-asset` 调用技能。
+
+## 依赖的 MCP 工具
+
+- `gemini-image` — AI 图像生成与编辑（必需）
+- `imgbb` — 图片上传分享（可选）

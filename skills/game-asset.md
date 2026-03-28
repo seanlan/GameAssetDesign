@@ -68,15 +68,10 @@ Build the MCP prompt by combining:
 | flat | flat design, minimal shading, solid colors, vector style |
 | realistic | semi-realistic, detailed rendering, painterly style |
 
-### Model Selection
+### Model
 
-| Condition | Use |
-|-----------|-----|
-| Preset matches NanoBanana enum (anime, ghibli, pixar, cyberpunk, fantasy, watercolor, sketch, oil_painting) | `mcp__grsai-nanobanana__generate_image` with `style` param |
-| Need 2K/4K resolution | `mcp__grsai-nanobanana__generate_image` with `image_size` |
-| Free-form style or pixel/cel_shading/flat/realistic | `mcp__gemini-image__generate_image` with `style` string |
-| Uncommon aspect ratio (21:9, 5:4, etc.) | NanoBanana (11 ratios) |
-| User wants different result | Switch to other model |
+Use `mcp__gemini-image__generate_image` for all image generation.
+Use `mcp__gemini-image__edit_image` for all image editing (chroma key, inpaint, border removal).
 
 ### Aspect Ratio Mapping
 - Square (NxN) → 1:1
@@ -452,11 +447,6 @@ Image.fromarray(arr.astype(np.uint8)).save('icon_final.png')
 - Crop bbox too tight → missing feet, sword tips. Always crop generous, AI will clean up UI elements
 
 ## Model Failover
-
-If NanoBanana times out or fails, automatically switch to Gemini:
-1. Try NanoBanana first (if style matches its enum)
-2. On timeout/error → retry with Gemini
-3. Inform user which model was used
 
 ## Card Composition: Two Approaches
 
