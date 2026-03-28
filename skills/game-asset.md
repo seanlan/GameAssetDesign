@@ -163,199 +163,115 @@ Outputs to configured `output.base_dir` by type. Naming follows config template.
 
 Triggered when user provides a design image and asks to extract assets from it.
 
-### Flow
-
-1. User provides image path: "/game-asset 从这张图里提取素材"
-2. Read the image with Read tool, get pixel dimensions
-3. Identify all elements (see Detection Guidelines below)
-4. Write elements.json to output/.tmp/elements.json
-5. Generate annotated preview:
-   ```bash
-   python3 -m game_asset_tools annotate --input design.png --elements elements.json --output annotated.png
-   ```
-6. Show annotated preview, ask user to confirm
-7. User adjustments → update elements.json → re-annotate
-8. **Bbox Calibration** (CRITICAL — see below)
-9. Extract:
-   ```bash
-   python3 -m game_asset_tools extract --input design.png --elements elements.json --output-dir output/ --no-remove-bg --no-trim --padding 0
-   ```
-10. **Quality Check** — Read each extracted asset, compare with original
-11. Fix any issues (see Post-Extract Quality Pipeline)
-12. For backgrounds with needs_inpaint=true, use MCP edit_image
-13. Update manifest and generate asset manager page (MUST do this after every extraction):
-   ```bash
-   python3 -m game_asset_tools manager --output-dir output/ --manifest output/manifest.json --output output/asset_manager.html
-   open output/asset_manager.html
-   ```
-
-### CRITICAL: Bbox Calibration
-
-**Claude's visual bbox estimation has 20-50px error.** Never trust the first estimate. Always calibrate:
-
-1. **First pass**: estimate bbox visually, add generous padding
-2. **Test crop**: crop a small region with Python to verify position
-   ```python
-   img.crop((x1, y1, x2, y2)).save('output/.tmp/test_crop.png')
-   ```
-3. **Show to user**: Read the test crop, ask if position is correct
-4. **Adjust**: shift coordinates based on what you see
-5. **Repeat** until the crop matches the element exactly
-
-For **dense elements** (row of icons, button groups):
-- Crop the entire group first to see actual positions
-- Use pixel color scanning to find exact boundaries:
-  ```python
-  # Scan for gold border edge
-  for x in range(start, end):
-      r, g, b = arr[y, x]
-      if is_border_color(r, g, b):
-          print(f'Border at x={x}')
-  ```
-- Calculate spacing between elements from the scan results
-
-### Element Detection Guidelines
-
-When analyzing a design image:
-
-**Identify elements:**
-- **Characters**: human/creature figures, middle layer
-- **Icons**: small square/circular elements with borders, top layer
-- **UI elements**: buttons, bars, panels, text labels, top layer
-- **Background**: the full scene, bottom layer
-- **Shared components**: borders/frames appearing multiple times
-
-**Set needs_remove_bg correctly by type:**
-
-| Type | needs_remove_bg | Reason |
-|------|----------------|--------|
-| character | true | Need transparent PNG for game engine |
-| icon WITH border | **false** | Border is part of the asset |
-| icon WITHOUT border | true | Need to separate from background |
-| button (circular/shaped) | true | Need transparent PNG |
-| health/mana bar | false | Just crop the bar region tightly |
-| background | false | Keep as-is or inpaint |
-
-**Shared border/frame separation (IMPORTANT):**
-When icons share the same border, extract THREE types of assets:
-1. `icon_border.png` — pure border frame with transparent center and outer (reusable)
-2. `icon_fire.png` etc. — inner content WITH its background color plate, WITHOUT border (swappable)
-3. Game engine composites: content UNDER border at runtime
-
-**Content icons MUST keep their background plate** (the dark/colored fill behind the content).
-Without it, the border's decorative corners show through transparent gaps and the icon looks broken.
-
-**How to separate:**
-```
-# Border: AI replaces inner content with magenta → Python chroma key removes magenta
-edit_image: "Remove the [content] inside, keep ONLY the golden border frame.
-             Center should become solid magenta (#FF00FF)."
-Then: Python removes magenta (magenta_score = (R+B)/2 - G > 60 → transparent)
-Then: Remove dark outer pixels (forest residue), trim
-
-# Content: Simple Python crop of the inner area (border ~12px on each side)
-# Do NOT remove the background plate — the dark fill is part of the asset
-inner_bbox = (original_left + 12, original_top + 12, original_right - 12, original_bottom - 12)
-content = img.crop(inner_bbox)  # Keeps background plate, no AI needed
-```
-
-### Post-Extract Quality Pipeline
-
-After extraction, check each asset against the original. Apply fixes in this priority order — **prefer pixel-level processing over AI, use AI only as last resort:**
+### Core Flow
 
 ```
-Step 1: Visual check
-  Read each extracted asset, compare with original
-  Identify issues: edge contamination, incomplete borders, wrong content
-
-Step 2: Bbox adjustment (most common fix)
-  If content is cut off or includes neighboring elements:
-  → Adjust bbox coordinates and re-extract
-  → Use pixel scanning to find exact edges
-
-Step 3: Pixel-level cleanup (for minor contamination)
-  If small areas of background bleed into the asset:
-  → Use Python color filtering to remove contaminating pixels
-  → Set background-colored edge pixels to transparent
-  ```python
-  # Example: remove green forest pixels from icon edge
-  for x in range(width-1, width-15, -1):
-      if pixel_is_forest_green(arr[y, x]):
-          arr[y, x, 3] = 0  # make transparent
-  ```
-
-Step 4: Shared border template (for border contamination)
-  If an element's border is contaminated but another instance is clean:
-  → Extract border from the clean instance
-  → Composite: clean border + contaminated element's content
-  → Use border mask: outer N pixels from template, inner from target
-
-Step 5: AI completion (for truncated/incomplete assets)
-  When an element is cut off at the image edge (foot missing, arm truncated, border incomplete):
-  → This CANNOT be fixed by bbox adjustment (the content doesn't exist in the source image)
-  → **Best approach: one-shot redraw on chroma key background** (combines completion + bg removal):
-    Use AI edit_image on the ORIGINAL CROP (with background, before any removal):
-    prompt: "Redraw this exact [character] as complete full-body game asset on solid bright green (#00FF00) background.
-             IMPORTANT: Entire character fully visible from top of hair to bottom of BOTH feet on the ground.
-             Keep exact same design: [list all visual details from the original].
-             Same anime art style. Same pose."
-  → Then rembg → trim(padding=10)
-  → **Do NOT do it in 2 steps** (first complete, then change bg) — one-shot is better for style consistency
-  → For icons: use magenta #FF00FF instead of green, then Python chroma key removal
-
-Step 6: AI repair (for other issues that steps 2-5 can't fix)
-  → Use mcp edit_image for specific fixes
-  → After AI repair, re-run chroma key → removal pipeline
-  → Compare with original to ensure style consistency
-  → If AI changes style/proportions, reject and retry
+设计图 → 分析(bbox校准) → 裁切 → AI精修重绘(纯色背景) → 去除背景
 ```
 
-### Incomplete Asset Detection
+### Step 1: 分析
 
-After extraction, check if any asset is truncated at image edges:
+1. Read image, get pixel dimensions
+2. Claude visually identifies all elements → elements.json
+3. **Bbox calibration** (Claude估算有20-50px误差):
+   - Test crop 关键区域验证位置
+   - 对密集元素（图标行）用像素颜色扫描找精确边界
+   - 反复调整直到裁切与元素完全吻合
+4. Generate annotated preview → 用户确认
 
-```
-Signs of truncation:
-- Element bbox touches or is within 10px of image edge
-- Content appears "cut off" (limbs, borders, weapons ending abruptly at image boundary)
-- Bottom of characters missing feet/legs
-- Side of icons missing border sections
+### Step 2: 裁切
 
-When detected:
-1. Flag to user: "角色底部被截断（右脚缺失），需要AI补全吗？"
-2. If yes → Step 5 (AI completion)
-3. The AI completion prompt should reference the EXISTING content for style matching:
-   "Complete the missing right boot to match the left boot style. Same brown leather, metal guard, battle stance."
-```
-
-### AI Usage Guidelines
-
-Use AI where it produces better results. The goal is quality, not minimizing AI calls.
-
-**AI excels at:**
-- Completing truncated assets (one-shot redraw on chroma key bg)
-- Changing backgrounds to chroma key colors
-- Inpainting (removing foreground from background layer)
-- Style-level fixes
-
-**Prefer Python/bbox for:**
-- Precise coordinate-based cropping
-- Chroma key color removal (for icons — Python is more precise than rembg)
-- Size normalization and trimming
-
-**Workflow principle:** Combine AI and Python in one efficient pipeline:
-- AI does creative work (redraw, complete, change bg color)
-- Python/rembg does precise work (color removal, trim, resize)
-- Minimize total steps — one-shot > multi-step when possible
-
-### Size Normalization
-
-After extraction, if assets of the same type have different sizes (common for edge elements):
 ```bash
-# Normalize all icons to same size
-python3 -m game_asset_tools resize --input icon.png --output icon.png --size 128x128 --mode contain
+python3 -m game_asset_tools extract --input design.png --elements elements.json --output-dir output/ --no-remove-bg --no-trim --padding 0
 ```
-Use `contain` mode (not stretch) to preserve proportions.
+
+**bbox 宁大勿小** — 包含 UI 元素没关系（AI 精修时去除），截断的内容找不回来。
+
+### Step 3: AI 精修重绘（纯色背景）
+
+对每个裁切结果，用 AI 重绘到纯色背景上。**纯色必须与素材颜色差异最大**：
+
+| 素材主色调 | 纯色背景 | 原因 |
+|-----------|---------|------|
+| 暖色（红/橙/棕/金） | 绿色 #00FF00 | 绿与暖色差异最大 |
+| 冷色（蓝/青/紫） | 品红 #FF00FF | 品红与冷色差异最大 |
+| 混色/不确定 | 品红 #FF00FF | 安全默认 |
+
+**不能用白色** — 白色与高光、剑刃光效混淆。
+
+**按素材类型的 AI prompt：**
+
+**角色（需要透明背景）：**
+```
+"Change the background to solid bright green (#00FF00).
+ Remove [UI elements: HP bar, damage numbers, etc].
+ Keep the character EXACTLY as is with ALL details: [列出所有视觉特征].
+ If any part is cut off (feet, weapons), complete it."
+```
+
+**图标边框（需要中间透明）：**
+```
+"Remove the [fire] content inside this icon, keep ONLY the golden border frame.
+ Center area should become solid magenta (#FF00FF)."
+```
+
+**图标内容（保留底板，无边框）：**
+```
+"Remove the golden decorative border frame from around this icon.
+ Extend the dark [brown/blue] background to fill where the border was.
+ Keep the [fire/ice/lightning] content exactly the same."
+```
+
+**背景（去除前景）：**
+```
+"Remove all characters, UI elements, icons. Fill with the surrounding background."
+```
+
+### Step 4: 去除背景
+
+AI 精修后图像有纯色背景，用 Python 精确去除：
+
+**角色/需透明背景的素材 — Python 绿色键去除 + despill：**
+```python
+r, g, b = arr[:,:,0], arr[:,:,1], arr[:,:,2]
+dist = np.sqrt(r**2 + (g-255)**2 + b**2)
+arr[dist < 180, 3] = 0  # 纯绿 → 透明
+edge = (dist >= 180) & (dist < 220)
+arr[edge, 3] = ((dist[edge]-180)/40*255).clip(0,255)  # 边缘渐变
+
+# Despill: 校正绿色溢出
+mask = (g > r*1.3) & (g > b*1.3) & (g > 120) & (alpha > 128)
+arr[mask, 1] = (r[mask] + b[mask]) / 2  # G = avg(R,B)
+```
+
+**图标边框 — Python 品红键去除：**
+```python
+magenta_score = (r + b) / 2 - g
+arr[magenta_score > 60, 3] = 0
+```
+
+**图标内容 — 不去背景**（保留底板颜色，游戏引擎中叠在边框下层）
+
+**圆形按钮等简单形状 — rembg 直接去背**（唯一适用 rembg 的场景）
+
+**血条/蓝条 — 不去背景**，直接裁切即可
+
+### Step 5: 输出
+
+```bash
+python3 -m game_asset_tools trim --input asset.png --output asset.png --padding 6
+python3 -m game_asset_tools manager --output-dir output/ --manifest output/manifest.json --output output/asset_manager.html
+open output/asset_manager.html
+```
+
+### 共享边框分离
+
+当多个图标共享同一边框时，分离为独立素材：
+
+| 素材 | 说明 | 去背景 |
+|------|------|--------|
+| `icon_border.png` | 纯边框，中间+外围透明 | AI填品红 → Python色键去除 |
+| `icon_fire.png` 等 | 纯内容+底板，无边框 | AI去边框延伸底板，不去背景 |
 
 ## Asset Manager
 
