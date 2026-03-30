@@ -2,7 +2,7 @@
 
 ## Skills
 
-- [game-asset](skills/game-asset.md) — 游戏素材设计与提取。生成角色、图标、UI、卡牌、精灵图、瓦片等 2D 游戏素材，支持从设计图中提取和分离素材。
+- [game-asset](skills/game-asset/SKILL.md) — 游戏素材设计与提取。生成角色、图标、UI、卡牌、精灵图、瓦片等 2D 游戏素材，支持从设计图中提取和分离素材。
 
 ## 项目结构
 
