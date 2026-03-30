@@ -17,5 +17,7 @@
     "extract",
     "2d-game",
     "image-processing"
-  ]
+  ],
+  "commands": "./commands/",
+  "skills": "./skills/"
 }
