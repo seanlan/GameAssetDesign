@@ -217,6 +217,26 @@ def _cmd_pipeline(args):
         print(f"  {r['type']}: {r['name']} -> {r['output_path']}{flag}")
 
 
+def _cmd_nine_slice(args):
+    import os
+    from game_asset_tools.nine_slice import slice_nine, generate_nine_slice_preview
+    result = slice_nine(
+        args.input, args.output_dir,
+        border=args.border,
+        border_x=args.border_x,
+        border_y=args.border_y,
+    )
+    meta_path = os.path.join(args.output_dir, "nine_slice.json")
+    result.save_meta(meta_path)
+    print(f"9-slice: {len(result.slices)} parts -> {args.output_dir}")
+    print(f"Meta: {meta_path}")
+    if args.preview:
+        preview_path = os.path.join(args.output_dir, "preview.png")
+        tw, th = (int(x) for x in args.preview_size.split("x"))
+        generate_nine_slice_preview(result, preview_path, target_size=(tw, th))
+        print(f"Preview: {preview_path}")
+
+
 def _cmd_auto_detect(args):
     from game_asset_tools.auto_detect import detect_elements
     result = detect_elements(args.input, min_size=args.min_size, max_elements=args.max_elements)
@@ -374,6 +394,16 @@ def _build_parser() -> argparse.ArgumentParser:
     p_pl.add_argument("--output-dir", dest="output_dir", default="output/", help="Output directory")
     p_pl.add_argument("--padding", type=int, default=4, help="Crop padding")
 
+    # --- nine_slice ---
+    p_ns = subparsers.add_parser("nine_slice", help="9-slice an image for scalable UI")
+    p_ns.add_argument("--input", required=True, help="Input image path")
+    p_ns.add_argument("--output-dir", dest="output_dir", required=True, help="Output directory")
+    p_ns.add_argument("--border", type=int, help="Uniform border width")
+    p_ns.add_argument("--border-x", dest="border_x", type=int, help="Horizontal border")
+    p_ns.add_argument("--border-y", dest="border_y", type=int, help="Vertical border")
+    p_ns.add_argument("--preview", action="store_true", help="Generate stretch preview")
+    p_ns.add_argument("--preview-size", dest="preview_size", default="300x200", help="Preview size")
+
     # --- auto_detect ---
     p_ad = subparsers.add_parser("auto_detect", help="Auto-detect UI elements in a design image")
     p_ad.add_argument("--input", required=True, help="Design image path")
@@ -402,6 +432,7 @@ _COMMAND_HANDLERS = {
     "chromakey": _cmd_chromakey,
     "auto_detect": _cmd_auto_detect,
     "pipeline": _cmd_pipeline,
+    "nine_slice": _cmd_nine_slice,
 }
 
 
