@@ -32,6 +32,31 @@ PRESET_TO_GEMINI = {
 }
 
 
+CONFIG_FILENAME = "game-assets.yaml"
+
+
+def find_config(start_dir: str | None = None) -> str | None:
+    """Find game-assets.yaml in the given directory or CWD.
+
+    Also checks for legacy projects/*.yaml location.
+    """
+    base = start_dir or os.getcwd()
+
+    # Primary: game-assets.yaml in project root
+    primary = os.path.join(base, CONFIG_FILENAME)
+    if os.path.exists(primary):
+        return primary
+
+    # Legacy: projects/*.yaml
+    projects_dir = os.path.join(base, "projects")
+    if os.path.isdir(projects_dir):
+        for f in sorted(os.listdir(projects_dir)):
+            if f.endswith((".yaml", ".yml")):
+                return os.path.join(projects_dir, f)
+
+    return None
+
+
 def load_config(path: str) -> dict:
     """Load and validate a project YAML config file."""
     if not os.path.exists(path):

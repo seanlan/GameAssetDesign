@@ -22,7 +22,7 @@ If fails: `pip install -r requirements.txt`
    - Additional style keywords (optional)
    - Color palette (optional)
 
-2. Create project config at `projects/{project_name}.yaml`:
+2. Create project config at `game-assets.yaml` in the current project root:
 
 ```yaml
 project:

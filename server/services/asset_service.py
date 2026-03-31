@@ -10,8 +10,6 @@ from game_asset_tools.version import VersionManager
 from game_asset_tools.extract import extract_elements, load_elements
 
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 ASSET_SUBDIRS = {
     "characters": "character",
     "icons": "icon",
@@ -24,10 +22,14 @@ ASSET_SUBDIRS = {
 
 
 class AssetService:
-    """Manages project assets, manifest, and versions."""
+    """Manages project assets, manifest, and versions.
 
-    def __init__(self):
-        self.project_root = PROJECT_ROOT
+    Uses CWD as the project root — serves whichever project directory
+    the server was started from.
+    """
+
+    def __init__(self, project_root: str | None = None):
+        self.project_root = project_root or os.getcwd()
         self.output_dir = os.path.join(PROJECT_ROOT, "output")
         self.tmp_dir = os.path.join(self.output_dir, ".tmp")
         self.manifest_path = os.path.join(self.output_dir, "manifest.json")
@@ -171,15 +173,12 @@ class AssetService:
             return None
 
     def get_project_config(self) -> dict | None:
-        """Load the first project config found."""
-        projects_dir = os.path.join(self.project_root, "projects")
-        if not os.path.isdir(projects_dir):
+        """Load project config from game-assets.yaml in project root."""
+        from game_asset_tools.config import find_config, load_config
+        path = find_config(self.project_root)
+        if not path:
             return None
-        files = glob.glob(os.path.join(projects_dir, "*.yaml")) + glob.glob(os.path.join(projects_dir, "*.yml"))
-        if not files:
-            return None
-        from game_asset_tools.config import load_config
-        return load_config(files[0])
+        return load_config(path)
 
     def extract_from_elements(self, elements_path: str) -> dict:
         """Run extraction pipeline."""

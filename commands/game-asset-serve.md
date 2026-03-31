@@ -7,13 +7,14 @@ description: Start/stop the asset manager web service — FastAPI backend + Reac
 
 ## Start
 
+The server manages assets in **the current working directory** (where the user's game project is).
+
 ```bash
-# Start backend (port 8080)
-cd ${CLAUDE_PLUGIN_ROOT:-/Users/lanjinmin/Workspace/ClaudeCodeSpace/GameAssetDesign}
-uvicorn server.main:app --reload --port 8080 &
+# Start backend (port 8080) — from the user's project directory
+PYTHONPATH=${CLAUDE_PLUGIN_ROOT} uvicorn server.main:app --reload --port 8080 &
 
 # Start frontend (port 5173)
-cd web && npm run dev &
+cd ${CLAUDE_PLUGIN_ROOT}/web && npm run dev &
 ```
 
 Then open: http://localhost:5173

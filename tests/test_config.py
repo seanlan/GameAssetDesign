@@ -1,7 +1,7 @@
 import os
 import pytest
 from PIL import Image
-from game_asset_tools.config import load_config, get_asset_config, get_style_keywords
+from game_asset_tools.config import load_config, get_asset_config, get_style_keywords, find_config
 
 
 def test_load_config_valid(tmp_dir):
@@ -260,3 +260,39 @@ requirements:
     assert "ice_archer" in progress["characters"]["missing"]
     assert progress["icons"]["done"] == 1
     assert "healing" in progress["icons"]["missing"]
+
+
+def test_find_config_primary(tmp_dir):
+    config_path = os.path.join(tmp_dir, "game-assets.yaml")
+    with open(config_path, "w") as f:
+        f.write("project:\n  name: Test\n")
+    result = find_config(tmp_dir)
+    assert result == config_path
+
+
+def test_find_config_legacy(tmp_dir):
+    projects_dir = os.path.join(tmp_dir, "projects")
+    os.makedirs(projects_dir)
+    config_path = os.path.join(projects_dir, "my_game.yaml")
+    with open(config_path, "w") as f:
+        f.write("project:\n  name: Test\n")
+    result = find_config(tmp_dir)
+    assert result == config_path
+
+
+def test_find_config_none(tmp_dir):
+    result = find_config(tmp_dir)
+    assert result is None
+
+
+def test_find_config_primary_over_legacy(tmp_dir):
+    """Primary game-assets.yaml should take priority over projects/."""
+    primary = os.path.join(tmp_dir, "game-assets.yaml")
+    with open(primary, "w") as f:
+        f.write("project:\n  name: Primary\n")
+    projects_dir = os.path.join(tmp_dir, "projects")
+    os.makedirs(projects_dir)
+    with open(os.path.join(projects_dir, "legacy.yaml"), "w") as f:
+        f.write("project:\n  name: Legacy\n")
+    result = find_config(tmp_dir)
+    assert result == primary
