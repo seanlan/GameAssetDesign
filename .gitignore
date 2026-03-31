@@ -42,3 +42,4 @@ templates/fonts/*.ttf
 templates/fonts/*.otf
 !templates/fonts/.gitkeep
 !templates/fonts/custom/.gitkeep
+.playwright-mcp/
