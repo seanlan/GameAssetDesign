@@ -17,6 +17,7 @@
 | `/game-asset:version` | 版本管理 |
 | `/game-asset:export` | 引擎导出 |
 | `/game-asset:atlas` | 纹理图集打包 |
+| `/game-asset:serve` | 启动/停止素材管理 Web 服务 |
 
 ## 项目结构
 
