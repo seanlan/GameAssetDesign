@@ -201,6 +201,22 @@ def _cmd_chromakey(args):
     print(f"Chroma key removed: {args.output}")
 
 
+def _cmd_pipeline(args):
+    from game_asset_tools.extract import full_pipeline
+    result = full_pipeline(
+        source_path=args.input,
+        output_dir=args.output_dir,
+        chromakey=True,
+        trim=True,
+        crop_padding=args.padding,
+    )
+    print(f"Pipeline complete: {result['total']} elements extracted")
+    print(f"  Annotated: {result['annotated_path']}")
+    for r in result["results"]:
+        flag = " [needs inpaint]" if r.get("needs_inpaint") else ""
+        print(f"  {r['type']}: {r['name']} -> {r['output_path']}{flag}")
+
+
 def _cmd_auto_detect(args):
     from game_asset_tools.auto_detect import detect_elements
     result = detect_elements(args.input, min_size=args.min_size, max_elements=args.max_elements)
@@ -352,6 +368,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ck.add_argument("--color", default="auto", choices=["auto", "green", "magenta"])
     p_ck.add_argument("--no-despill", dest="no_despill", action="store_true")
 
+    # --- pipeline ---
+    p_pl = subparsers.add_parser("pipeline", help="One-step: auto-detect → extract → chromakey → trim")
+    p_pl.add_argument("--input", required=True, help="Design image path")
+    p_pl.add_argument("--output-dir", dest="output_dir", default="output/", help="Output directory")
+    p_pl.add_argument("--padding", type=int, default=4, help="Crop padding")
+
     # --- auto_detect ---
     p_ad = subparsers.add_parser("auto_detect", help="Auto-detect UI elements in a design image")
     p_ad.add_argument("--input", required=True, help="Design image path")
@@ -379,6 +401,7 @@ _COMMAND_HANDLERS = {
     "atlas": _cmd_atlas,
     "chromakey": _cmd_chromakey,
     "auto_detect": _cmd_auto_detect,
+    "pipeline": _cmd_pipeline,
 }
 
 

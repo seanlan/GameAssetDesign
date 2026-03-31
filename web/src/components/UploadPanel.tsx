@@ -103,6 +103,23 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
     }
   };
 
+  const handleQuickPipeline = async () => {
+    if (!file) return;
+    setExtracting(true);
+    try {
+      const res = await api.runPipeline(file);
+      if (res.annotated_url) {
+        setAnnotatedUrl(`${BASE_URL}${res.annotated_url}?t=${Date.now()}`);
+      }
+      onToast(`Pipeline complete: ${res.total} assets extracted`, 'success');
+      onRefresh();
+    } catch {
+      onToast('Pipeline failed', 'error');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   // --- Element editing helpers ---
 
   const updateElement = (layer: LayerKey, idx: number, patch: Partial<ElementEntry>) => {
@@ -334,6 +351,14 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
         </div>
 
         <div className="modal-footer">
+          <button
+            className="modal-btn modal-btn--accent"
+            onClick={handleQuickPipeline}
+            disabled={!file || extracting}
+            title="Auto-detect → extract → chromakey → trim (one step)"
+          >
+            {extracting ? 'Processing...' : '⚡ Quick Extract'}
+          </button>
           <button
             className="modal-btn modal-btn--secondary"
             onClick={handleAnalyze}

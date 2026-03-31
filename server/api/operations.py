@@ -101,6 +101,38 @@ async def extract_assets(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/pipeline")
+async def run_pipeline(image: UploadFile = File(...)):
+    """One-step extraction: upload → auto-detect → extract → chromakey → trim."""
+    try:
+        await ws_manager.broadcast({"event": "task_start", "task": "pipeline"})
+
+        # Save uploaded file
+        upload_dir = asset_service.tmp_dir
+        os.makedirs(upload_dir, exist_ok=True)
+        upload_path = os.path.join(upload_dir, image.filename or "design.png")
+        content = await image.read()
+        with open(upload_path, "wb") as f:
+            f.write(content)
+
+        # Run full pipeline
+        from game_asset_tools.extract import full_pipeline
+        result = full_pipeline(
+            source_path=upload_path,
+            output_dir=asset_service.output_dir,
+        )
+
+        await ws_manager.broadcast({"event": "task_complete", "task": "pipeline", "total": result["total"]})
+        return {
+            "total": result["total"],
+            "annotated_url": f"/output/.tmp/annotated.png",
+            "results": [{"name": r["name"], "type": r["type"], "path": r["output_path"]} for r in result["results"]],
+        }
+    except Exception as e:
+        await ws_manager.broadcast({"event": "task_error", "task": "pipeline", "error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/refine")
 async def refine_asset(req: RefineRequest):
     """Refine an asset — edge fix, AI edit, inpaint, style unify."""

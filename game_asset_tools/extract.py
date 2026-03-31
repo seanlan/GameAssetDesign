@@ -240,3 +240,64 @@ def extract_elements(
             results.append(result)
 
     return results
+
+
+def full_pipeline(
+    source_path: str,
+    output_dir: str,
+    elements: dict | None = None,
+    min_size: int = 30,
+    max_elements: int = 20,
+    chromakey: bool = True,
+    trim: bool = True,
+    trim_padding: int = 6,
+    crop_padding: int = 4,
+) -> dict:
+    """One-step extraction pipeline: detect → annotate → extract → chromakey → trim.
+
+    If elements is None, auto-detects using OpenCV.
+    Returns dict with elements, annotated preview path, and extraction results.
+    """
+    tmp_dir = os.path.join(output_dir, ".tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    # Step 1: Detect elements (auto or provided)
+    if elements is None:
+        from game_asset_tools.auto_detect import detect_elements
+        elements = detect_elements(source_path, min_size=min_size, max_elements=max_elements)
+        elements["source"] = source_path
+
+    # Save elements.json
+    elements_path = os.path.join(tmp_dir, "elements.json")
+    with open(elements_path, "w", encoding="utf-8") as f:
+        json.dump(elements, f, indent=2, ensure_ascii=False)
+
+    # Step 2: Annotate
+    from game_asset_tools.annotate import annotate_image
+    annotated_path = os.path.join(tmp_dir, "annotated.png")
+    annotate_image(source_path, elements, annotated_path)
+
+    # Step 3: Extract with chromakey + trim
+    # Set trim_padding on all elements that don't have it
+    for layer_name in ["bottom", "middle", "top"]:
+        for item in elements.get("layers", {}).get(layer_name, []):
+            if "trim_padding" not in item:
+                item["trim_padding"] = trim_padding
+
+    results = extract_elements(
+        source_path=source_path,
+        elements=elements,
+        output_dir=output_dir,
+        remove_bg=True,
+        trim=trim,
+        crop_padding=crop_padding,
+        chromakey=chromakey,
+    )
+
+    return {
+        "elements": elements,
+        "elements_path": elements_path,
+        "annotated_path": annotated_path,
+        "results": results,
+        "total": len(results),
+    }

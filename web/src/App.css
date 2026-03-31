@@ -1400,3 +1400,26 @@ input, select { font-family: var(--font-mono); font-size: 11px; }
   min-width: 16px;
   text-align: right;
 }
+
+/* Quick Extract accent button */
+.modal-btn--accent {
+  background: linear-gradient(135deg, var(--amber), var(--amber-dim));
+  border: 1px solid var(--amber);
+  color: var(--bg-deep);
+  font-weight: 700;
+  font-family: var(--font-head);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px var(--amber-glow);
+  transition: all var(--transition);
+}
+
+.modal-btn--accent:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(240, 160, 48, 0.3);
+  transform: translateY(-1px);
+}
+
+.modal-btn--accent:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+}

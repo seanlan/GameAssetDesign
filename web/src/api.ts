@@ -92,6 +92,13 @@ export const api = {
     return res.json();
   },
 
+  async runPipeline(file: File) {
+    const form = new FormData();
+    form.append('image', file);
+    const res = await fetch(`${BASE_URL}/api/pipeline`, { method: 'POST', body: form });
+    return res.json();
+  },
+
   async analyzeDesign(file: File) {
     const form = new FormData();
     form.append('file', file);
