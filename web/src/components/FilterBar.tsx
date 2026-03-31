@@ -12,11 +12,13 @@ interface FilterBarProps {
   activeType: string;
   search: string;
   sort: string;
+  tagFilter: string;
   totalCount: number;
   selectedCount: number;
   onTypeChange: (type: string) => void;
   onSearchChange: (search: string) => void;
   onSortChange: (sort: string) => void;
+  onTagFilterChange: (tag: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
 }
@@ -25,11 +27,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
   activeType,
   search,
   sort,
+  tagFilter,
   totalCount,
   selectedCount,
   onTypeChange,
   onSearchChange,
   onSortChange,
+  onTagFilterChange,
   onSelectAll,
   onDeselectAll,
 }) => {
@@ -54,6 +58,14 @@ const FilterBar: React.FC<FilterBarProps> = ({
           placeholder="Search assets..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
+        />
+
+        <input
+          className="filter-search filter-tag-search"
+          type="text"
+          placeholder="Filter by tag..."
+          value={tagFilter}
+          onChange={(e) => onTagFilterChange(e.target.value)}
         />
 
         <select

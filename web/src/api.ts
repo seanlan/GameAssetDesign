@@ -15,6 +15,7 @@ export interface Asset {
   generated_at: string;
   relationships: Record<string, any>;
   image_url: string;
+  tags?: string[];
 }
 
 export const api = {
@@ -126,6 +127,15 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(elements),
+    });
+    return res.json();
+  },
+
+  async updateTags(name: string, tags: string[]) {
+    const res = await fetch(`${BASE_URL}/api/assets/${name}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
     });
     return res.json();
   },

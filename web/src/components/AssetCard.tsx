@@ -61,6 +61,16 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, selected, onClick, onDoubl
           </span>
           <span className="asset-card__size">{formatSize(asset.size_bytes)}</span>
         </div>
+        {asset.tags && asset.tags.length > 0 && (
+          <div className="asset-card__tags">
+            {asset.tags.slice(0, 3).map((tag) => (
+              <span key={tag} className="asset-tag">{tag}</span>
+            ))}
+            {asset.tags.length > 3 && (
+              <span className="asset-tag asset-tag--more">+{asset.tags.length - 3}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {selected && <div className="asset-card__check">✓</div>}

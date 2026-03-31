@@ -88,3 +88,30 @@ def test_manifest_get_entry(tmp_dir):
     assert entry is not None
     assert entry["type"] == "icon"
     assert m.get_entry("nonexistent.png") is None
+
+
+def test_manifest_tags(tmp_dir):
+    m = Manifest(tmp_dir, "test")
+    m.add_entry(file="a.png", asset_type="icon", prompt="test", model="gemini", tags=["fire", "skill"])
+    m.save()
+
+    m2 = Manifest(tmp_dir, "test")
+    entry = m2.get_entry("a.png")
+    assert "fire" in entry["tags"]
+
+    m2.add_tags("a.png", ["magic"])
+    assert "magic" in m2.get_entry("a.png")["tags"]
+
+    m2.remove_tag("a.png", "fire")
+    assert "fire" not in m2.get_entry("a.png")["tags"]
+
+    results = m2.find_by_tag("skill")
+    assert len(results) == 1
+
+
+def test_manifest_tags_empty(tmp_dir):
+    m = Manifest(tmp_dir, "test")
+    m.add_entry(file="b.png", asset_type="icon", prompt="test", model="gemini")
+    m.save()
+    entry = m.get_entry("b.png")
+    assert "tags" not in entry  # No tags by default

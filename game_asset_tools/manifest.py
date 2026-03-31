@@ -32,6 +32,7 @@ class Manifest:
         reference_image: str | None = None,
         project_config: str = "",
         relationships: dict | None = None,
+        tags: list[str] | None = None,
     ) -> None:
         """Add a generation record."""
         entry = {
@@ -57,6 +58,8 @@ class Manifest:
             entry["project_config"] = project_config
         if relationships:
             entry["relationships"] = relationships
+        if tags:
+            entry["tags"] = tags
 
         self.entries.append(entry)
 
@@ -66,6 +69,26 @@ class Manifest:
             if entry.get("file") == file:
                 return entry
         return None
+
+    def add_tags(self, file: str, tags: list[str]) -> None:
+        """Add tags to an existing entry."""
+        entry = self.get_entry(file)
+        if entry is None:
+            return
+        existing = entry.get("tags", [])
+        entry["tags"] = list(set(existing + tags))
+
+    def remove_tag(self, file: str, tag: str) -> None:
+        """Remove a tag from an entry."""
+        entry = self.get_entry(file)
+        if entry is None:
+            return
+        tags = entry.get("tags", [])
+        entry["tags"] = [t for t in tags if t != tag]
+
+    def find_by_tag(self, tag: str) -> list[dict]:
+        """Find all entries with a given tag."""
+        return [e for e in self.entries if tag in e.get("tags", [])]
 
     def add_relationship(self, file: str, rel_type: str, target: str) -> None:
         """Add a relationship target to an existing entry."""

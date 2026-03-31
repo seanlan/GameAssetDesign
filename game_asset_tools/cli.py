@@ -237,6 +237,19 @@ def _cmd_nine_slice(args):
         print(f"Preview: {preview_path}")
 
 
+def _cmd_style_unify(args):
+    """Apply consistent style keywords to a batch generate prompt."""
+    from game_asset_tools.config import find_config, load_config, get_style_keywords
+    config_path = find_config()
+    if not config_path:
+        print("No game-assets.yaml found")
+        return
+    config = load_config(config_path)
+    keywords = get_style_keywords(config)
+    print(f"Style keywords for batch generation:\n{keywords}")
+    print(f"\nUse these keywords in your AI generation prompts to ensure consistent style.")
+
+
 def _cmd_auto_detect(args):
     from game_asset_tools.auto_detect import detect_elements
     result = detect_elements(args.input, min_size=args.min_size, max_elements=args.max_elements)
@@ -404,6 +417,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ns.add_argument("--preview", action="store_true", help="Generate stretch preview")
     p_ns.add_argument("--preview-size", dest="preview_size", default="300x200", help="Preview size")
 
+    # --- style_unify ---
+    p_su = subparsers.add_parser("style_unify", help="Show project style keywords for batch consistency")
+
     # --- auto_detect ---
     p_ad = subparsers.add_parser("auto_detect", help="Auto-detect UI elements in a design image")
     p_ad.add_argument("--input", required=True, help="Design image path")
@@ -433,6 +449,7 @@ _COMMAND_HANDLERS = {
     "auto_detect": _cmd_auto_detect,
     "pipeline": _cmd_pipeline,
     "nine_slice": _cmd_nine_slice,
+    "style_unify": _cmd_style_unify,
 }
 
 

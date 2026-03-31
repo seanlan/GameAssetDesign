@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { api } from '../api';
+import BboxEditor from './BboxEditor';
+import type { BboxItem } from './BboxEditor';
 
 const BASE_URL = 'http://localhost:8080';
 
@@ -43,6 +45,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
   const [elements, setElements] = useState<ElementsData | null>(null);
   const [elementsPath, setElementsPath] = useState<string | null>(null);
   const [savingElements, setSavingElements] = useState(false);
+  const [visualEditor, setVisualEditor] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((f: File) => {
@@ -172,6 +175,33 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
     });
   };
 
+  // Build flat list for BboxEditor
+  const allBboxItems: BboxItem[] = elements
+    ? LAYERS.flatMap((layer) =>
+        (elements.layers[layer] ?? []).map((e) => ({
+          name: `${layer}/${e.name}`,
+          bbox: e.bbox,
+        }))
+      )
+    : [];
+
+  const handleBboxChange = (updated: BboxItem[]) => {
+    if (!elements) return;
+    // Rebuild layers from flat list
+    let flatIdx = 0;
+    setElements((prev) => {
+      if (!prev) return prev;
+      const newLayers = { ...prev.layers };
+      LAYERS.forEach((layer) => {
+        newLayers[layer] = (prev.layers[layer] ?? []).map((e) => {
+          const item = updated[flatIdx++];
+          return item ? { ...e, bbox: item.bbox } : e;
+        });
+      });
+      return { ...prev, layers: newLayers };
+    });
+  };
+
   const handleSaveAndReannotate = async () => {
     if (!elements) return;
     setSavingElements(true);
@@ -257,16 +287,37 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
                 <span className="bbox-editor__title">
                   Detected Elements ({totalElements})
                 </span>
-                <button
-                  className="bbox-editor__save-btn"
-                  onClick={handleSaveAndReannotate}
-                  disabled={savingElements}
-                >
-                  {savingElements ? 'Saving...' : 'Save & Re-annotate'}
-                </button>
+                <div className="bbox-editor__header-actions">
+                  {annotatedUrl && (
+                    <button
+                      className={`bbox-editor__toggle-btn${visualEditor ? ' active' : ''}`}
+                      onClick={() => setVisualEditor((v) => !v)}
+                      title="Toggle visual bbox editor"
+                    >
+                      {visualEditor ? 'Numeric' : 'Visual'}
+                    </button>
+                  )}
+                  <button
+                    className="bbox-editor__save-btn"
+                    onClick={handleSaveAndReannotate}
+                    disabled={savingElements}
+                  >
+                    {savingElements ? 'Saving...' : 'Save & Re-annotate'}
+                  </button>
+                </div>
               </div>
 
-              {LAYERS.map((layer) => {
+              {/* Visual canvas editor */}
+              {visualEditor && annotatedUrl && (
+                <BboxEditor
+                  imageUrl={annotatedUrl}
+                  items={allBboxItems}
+                  onChange={handleBboxChange}
+                />
+              )}
+
+              {/* Numeric editor — hidden in visual mode */}
+              {!visualEditor && LAYERS.map((layer) => {
                 const layerElems = elements.layers[layer] ?? [];
                 return (
                   <div key={layer} className="bbox-layer">

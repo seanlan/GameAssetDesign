@@ -35,6 +35,7 @@ function App() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('time');
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [tagFilter, setTagFilter] = useState('');
   const [detailAsset, setDetailAsset] = useState<Asset | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
@@ -137,7 +138,12 @@ function App() {
     setDetailAsset(asset);
   }, []);
 
-  const selectedAssets = assets.filter((a) => selectedNames.has(a.name));
+  // Apply tag filter client-side (tag filter is purely frontend)
+  const filteredAssets = tagFilter
+    ? assets.filter((a) => (a.tags ?? []).some((t) => t.toLowerCase().includes(tagFilter.toLowerCase())))
+    : assets;
+
+  const selectedAssets = filteredAssets.filter((a) => selectedNames.has(a.name));
 
   return (
     <div className="app">
@@ -168,7 +174,8 @@ function App() {
         activeType={activeType}
         search={search}
         sort={sort}
-        totalCount={assets.length}
+        tagFilter={tagFilter}
+        totalCount={filteredAssets.length}
         selectedCount={selectedNames.size}
         onTypeChange={(t) => {
           setActiveType(t);
@@ -176,7 +183,8 @@ function App() {
         }}
         onSearchChange={setSearch}
         onSortChange={setSort}
-        onSelectAll={() => setSelectedNames(new Set(assets.map((a) => a.name)))}
+        onTagFilterChange={setTagFilter}
+        onSelectAll={() => setSelectedNames(new Set(filteredAssets.map((a) => a.name)))}
         onDeselectAll={() => setSelectedNames(new Set())}
       />
 
@@ -191,14 +199,14 @@ function App() {
               <div className="spinner" />
               <span>Loading assets...</span>
             </div>
-          ) : assets.length === 0 ? (
+          ) : filteredAssets.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state__icon">📦</div>
               <div>No assets found</div>
             </div>
           ) : (
             <div className="asset-grid">
-              {assets.map((asset) => (
+              {filteredAssets.map((asset) => (
                 <AssetCard
                   key={asset.name}
                   asset={asset}
