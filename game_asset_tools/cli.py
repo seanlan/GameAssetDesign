@@ -251,6 +251,7 @@ def _cmd_style_unify(args):
 
 
 def _cmd_auto_detect(args):
+    import os
     from game_asset_tools.auto_detect import detect_elements
     result = detect_elements(args.input, min_size=args.min_size, max_elements=args.max_elements)
     output = args.output or os.path.join("output", ".tmp", "elements.json")
