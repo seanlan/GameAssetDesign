@@ -285,6 +285,58 @@ def test_find_config_none(tmp_dir):
     assert result is None
 
 
+def test_get_templates(tmp_dir):
+    from game_asset_tools.config import get_templates
+    config_path = os.path.join(tmp_dir, "test.yaml")
+    with open(config_path, "w") as f:
+        f.write("""
+project:
+  name: "Test"
+  engine: "unity"
+style:
+  preset: "anime"
+  keywords: ""
+  palette: []
+assets: {}
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}"
+templates:
+  - name: "skill_icon"
+    type: "icon"
+    prompt_template: "A {name} skill icon"
+  - name: "character"
+    type: "character"
+    prompt_template: "A {name} character"
+""")
+    config = load_config(config_path)
+    templates = get_templates(config)
+    assert len(templates) == 2
+    assert templates[0]["name"] == "skill_icon"
+
+
+def test_get_templates_empty(tmp_dir):
+    from game_asset_tools.config import get_templates
+    config_path = os.path.join(tmp_dir, "test.yaml")
+    with open(config_path, "w") as f:
+        f.write("""
+project:
+  name: "Test"
+  engine: "unity"
+style:
+  preset: "anime"
+  keywords: ""
+  palette: []
+assets: {}
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}"
+""")
+    config = load_config(config_path)
+    templates = get_templates(config)
+    assert templates == []
+
+
 def test_find_config_primary_over_legacy(tmp_dir):
     """Primary game-assets.yaml should take priority over projects/."""
     primary = os.path.join(tmp_dir, "game-assets.yaml")

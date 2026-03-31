@@ -6,6 +6,7 @@ import FilterBar from './components/FilterBar';
 import ActionPanel from './components/ActionPanel';
 import DetailPanel from './components/DetailPanel';
 import ProgressBar from './components/ProgressBar';
+import StatsPanel from './components/StatsPanel';
 import UploadPanel from './components/UploadPanel';
 import GeneratePanel from './components/GeneratePanel';
 import ApiKeyModal from './components/ApiKeyModal';
@@ -178,6 +179,9 @@ function App() {
         onSelectAll={() => setSelectedNames(new Set(assets.map((a) => a.name)))}
         onDeselectAll={() => setSelectedNames(new Set())}
       />
+
+      {/* Stats panel */}
+      <StatsPanel assets={assets} />
 
       {/* Main area */}
       <div className="main-area">

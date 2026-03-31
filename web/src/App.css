@@ -1322,3 +1322,81 @@ input, select { font-family: var(--font-mono); font-size: 11px; }
   justify-content: center;
   margin-top: 1px;
 }
+
+/* ===== Stats Panel ===== */
+.stats-panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 6px 20px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.stats-panel__summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.stats-panel__total strong {
+  color: var(--amber);
+  font-family: var(--font-head);
+}
+
+.stats-panel__size {
+  color: var(--text-dim);
+}
+
+.stats-panel__bars {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 100px;
+}
+
+.stats-bar__label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+.stats-bar__track {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.stats-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.stats-bar__count {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  min-width: 16px;
+  text-align: right;
+}

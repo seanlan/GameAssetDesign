@@ -45,3 +45,13 @@ async def get_progress():
 
     progress = check_progress(reqs, service.output_dir)
     return {"configured": True, "has_requirements": True, "progress": progress}
+
+
+@router.get("/templates")
+async def get_templates():
+    """Get asset generation templates from project config."""
+    config = service.get_project_config()
+    if not config:
+        return {"templates": []}
+    from game_asset_tools.config import get_templates
+    return {"templates": get_templates(config)}

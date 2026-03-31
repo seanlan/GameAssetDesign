@@ -143,6 +143,11 @@ def check_progress(requirements: dict, output_dir: str) -> dict:
     return progress
 
 
+def get_templates(config: dict) -> list[dict]:
+    """Get asset generation templates from config."""
+    return config.get("templates", [])
+
+
 def get_style_keywords(config: dict) -> str:
     """Build the full style keyword string from config."""
     style = config.get("style", {})
