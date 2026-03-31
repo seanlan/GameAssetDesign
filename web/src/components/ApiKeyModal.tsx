@@ -1,15 +1,17 @@
 import React from 'react';
+import { t, useLang } from '../i18n';
 
 interface ApiKeyModalProps {
   onClose: () => void;
 }
 
 const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ onClose }) => {
+  useLang();
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel modal-panel--narrow" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">API Key Required</span>
+          <span className="modal-title">{t('apikey.title')}</span>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -45,7 +47,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ onClose }) => {
 
         <div className="modal-footer">
           <button className="modal-btn modal-btn--primary" onClick={onClose}>
-            Got it
+            {t('apikey.dismiss')}
           </button>
         </div>
       </div>

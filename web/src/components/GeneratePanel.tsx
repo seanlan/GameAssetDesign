@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../api';
+import { t, useLang } from '../i18n';
 
 const ASSET_TYPES = [
   'character', 'icon', 'ui', 'card', 'background', 'sprite', 'tileset',
@@ -28,6 +29,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
   onRefresh,
   onApiKeyError,
 }) => {
+  useLang();
   const [description, setDescription] = useState('');
   const [assetType, setAssetType] = useState('character');
   const [style, setStyle] = useState('');
@@ -70,16 +72,16 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Generate Asset</span>
+          <span className="modal-title">{t('generate.title')}</span>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="modal-body">
           <div className="modal-field">
-            <label className="modal-label">Description</label>
+            <label className="modal-label">{t('generate.description')}</label>
             <textarea
               className="modal-textarea"
-              placeholder="A warrior with golden armor, holding a sword..."
+              placeholder={t('generate.description')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -90,7 +92,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
 
           <div className="modal-row">
             <div className="modal-field">
-              <label className="modal-label">Asset Type</label>
+              <label className="modal-label">{t('generate.type')}</label>
               <select
                 className="modal-select"
                 value={assetType}
@@ -106,7 +108,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
             </div>
 
             <div className="modal-field">
-              <label className="modal-label">Style Override</label>
+              <label className="modal-label">{t('generate.style')}</label>
               <select
                 className="modal-select"
                 value={style}
@@ -123,7 +125,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
 
         <div className="modal-footer">
           <button className="modal-btn modal-btn--secondary" onClick={onClose} disabled={loading}>
-            Cancel
+            {t('detail.close')}
           </button>
           <button
             className="modal-btn modal-btn--primary"
@@ -133,10 +135,10 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
             {loading ? (
               <span className="modal-btn__loading">
                 <span className="modal-spinner" />
-                Generating...
+                {t('generate.generating')}
               </span>
             ) : (
-              'Generate'
+              t('generate.submit')
             )}
           </button>
         </div>

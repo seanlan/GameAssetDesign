@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { api } from '../api';
 import BboxEditor from './BboxEditor';
 import type { BboxItem } from './BboxEditor';
+import { t, useLang } from '../i18n';
 
 const BASE_URL = 'http://localhost:8080';
 
@@ -35,6 +36,7 @@ const LAYERS = ['bottom', 'middle', 'top'] as const;
 type LayerKey = typeof LAYERS[number];
 
 const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }) => {
+  useLang();
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -232,7 +234,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel modal-panel--wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Upload Design Image</span>
+          <span className="modal-title">{t('upload.title')}</span>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -257,7 +259,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
             ) : (
               <>
                 <span className="upload-dropzone__icon">⬆</span>
-                <span className="upload-dropzone__text">Drop image here or click to browse</span>
+                <span className="upload-dropzone__text">{t('upload.dragDrop')}</span>
               </>
             )}
           </div>
@@ -285,7 +287,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
             <div className="bbox-editor">
               <div className="bbox-editor__header">
                 <span className="bbox-editor__title">
-                  Detected Elements ({totalElements})
+                  {t('upload.detected')} ({totalElements})
                 </span>
                 <div className="bbox-editor__header-actions">
                   {annotatedUrl && (
@@ -294,7 +296,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
                       onClick={() => setVisualEditor((v) => !v)}
                       title="Toggle visual bbox editor"
                     >
-                      {visualEditor ? 'Numeric' : 'Visual'}
+                      {visualEditor ? t('upload.numeric') : t('upload.visual')}
                     </button>
                   )}
                   <button
@@ -302,7 +304,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
                     onClick={handleSaveAndReannotate}
                     disabled={savingElements}
                   >
-                    {savingElements ? 'Saving...' : 'Save & Re-annotate'}
+                    {savingElements ? t('upload.saving') : t('upload.save')}
                   </button>
                 </div>
               </div>
@@ -322,7 +324,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
                 return (
                   <div key={layer} className="bbox-layer">
                     <div className="bbox-layer__title">
-                      Layer: <strong>{layer}</strong> ({layerElems.length})
+                      {t('upload.layer')}: <strong>{layer}</strong> ({layerElems.length})
                     </div>
 
                     {layerElems.map((elem, idx) => (
@@ -392,7 +394,7 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
                       className="bbox-layer__add-btn"
                       onClick={() => addElement(layer)}
                     >
-                      + Add Element to {layer}
+                      + {t('upload.addElement')} {layer}
                     </button>
                   </div>
                 );
@@ -408,21 +410,21 @@ const UploadPanel: React.FC<UploadPanelProps> = ({ onClose, onToast, onRefresh }
             disabled={!file || extracting}
             title="Auto-detect → extract → chromakey → trim (one step)"
           >
-            {extracting ? 'Processing...' : '⚡ Quick Extract'}
+            {extracting ? t('upload.processing') : t('upload.quickExtract')}
           </button>
           <button
             className="modal-btn modal-btn--secondary"
             onClick={handleAnalyze}
             disabled={!file || analyzing}
           >
-            {analyzing ? 'Analyzing...' : 'Analyze'}
+            {analyzing ? t('upload.analyzing') : t('upload.analyze')}
           </button>
           <button
             className="modal-btn modal-btn--primary"
             onClick={handleExtract}
             disabled={extracting || (!annotatedUrl && !file)}
           >
-            {extracting ? 'Extracting...' : 'Extract Assets'}
+            {extracting ? t('upload.extracting') : t('upload.extract')}
           </button>
         </div>
       </div>

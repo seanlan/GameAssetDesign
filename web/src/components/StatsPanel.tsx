@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Asset } from '../api';
+import { t, useLang } from '../i18n';
 
 interface StatsPanelProps {
   assets: Asset[];
@@ -12,6 +13,7 @@ function formatBytes(bytes: number): string {
 }
 
 const StatsPanel: React.FC<StatsPanelProps> = ({ assets }) => {
+  useLang();
   if (!assets || assets.length === 0) return null;
 
   const byType: Record<string, number> = {};
@@ -29,7 +31,7 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ assets }) => {
     <div className="stats-panel">
       <div className="stats-panel__summary">
         <span className="stats-panel__total">
-          <strong>{assets.length}</strong> assets
+          <strong>{assets.length}</strong> {t('filter.assets')}
         </span>
         <span className="stats-panel__size">{formatBytes(totalSize)}</span>
       </div>

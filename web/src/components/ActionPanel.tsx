@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Asset } from '../api';
 import { api } from '../api';
+import { t, useLang } from '../i18n';
 
 const REFINE_TYPES = [
   { value: 'edge_fix', label: 'Edge Fix' },
@@ -24,6 +25,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
   onToast,
   onClearSelection,
 }) => {
+  useLang();
   const [note, setNote] = useState('');
   const [refineType, setRefineType] = useState('edge_fix');
   const [reclassifyType, setReclassifyType] = useState('icon');
@@ -112,7 +114,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
   return (
     <div className="action-panel">
       <div className="action-panel__header">
-        <span className="action-panel__count">{selected.length} selected</span>
+        <span className="action-panel__count">{t('action.selected')} {selected.length} {t('action.assets')}</span>
         <button className="action-panel__close" onClick={onClearSelection}>✕</button>
       </div>
 
@@ -132,7 +134,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
             <input
               className="action-note"
               type="text"
-              placeholder="Note (optional)..."
+              placeholder={t('action.note')}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -141,7 +143,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
               onClick={handleRefine}
               disabled={loading}
             >
-              {loading ? 'Working...' : 'Refine'}
+              {loading ? t('action.working') : t('action.refine')}
             </button>
           </div>
         </div>
@@ -154,7 +156,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
               onClick={handleDelete}
               disabled={loading}
             >
-              Delete
+              {t('action.delete')}
             </button>
 
             <button
@@ -162,7 +164,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
               onClick={() => setShowReclassify(!showReclassify)}
               disabled={loading}
             >
-              Reclassify
+              {t('action.type')}
             </button>
 
             {showReclassify && (
@@ -181,7 +183,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
                   onClick={handleReclassify}
                   disabled={loading}
                 >
-                  Apply
+                  {t('action.submit')}
                 </button>
               </>
             )}
@@ -191,7 +193,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
         {/* Export + Atlas */}
         <div className="action-panel__section">
           <div className="action-panel__row">
-            <span className="action-label">Export:</span>
+            <span className="action-label">{t('action.export')}:</span>
             {ENGINES.map((engine) => (
               <button
                 key={engine}
@@ -207,7 +209,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
               onClick={handleAtlas}
               disabled={loading}
             >
-              Pack Atlas
+              {t('action.atlas')}
             </button>
           </div>
         </div>

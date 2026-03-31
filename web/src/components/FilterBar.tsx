@@ -1,12 +1,18 @@
 import React from 'react';
+import { t, useLang } from '../i18n';
 
 const TYPES = ['all', 'character', 'icon', 'ui', 'card', 'background', 'sprite', 'tileset'];
 
-const SORT_OPTIONS = [
-  { value: 'time', label: 'By Time' },
-  { value: 'type', label: 'By Type' },
-  { value: 'name', label: 'By Name' },
-];
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  all: 'filter.all',
+  character: 'filter.character',
+  icon: 'filter.icon',
+  ui: 'filter.ui',
+  card: 'filter.card',
+  background: 'filter.background',
+  sprite: 'filter.sprite',
+  tileset: 'filter.tileset',
+};
 
 interface FilterBarProps {
   activeType: string;
@@ -37,16 +43,25 @@ const FilterBar: React.FC<FilterBarProps> = ({
   onSelectAll,
   onDeselectAll,
 }) => {
+  // Subscribe to language changes so labels re-render on toggle
+  useLang();
+
+  const SORT_OPTIONS = [
+    { value: 'time', label: t('filter.byTime') },
+    { value: 'type', label: t('filter.byType') },
+    { value: 'name', label: t('filter.byName') },
+  ];
+
   return (
     <div className="filter-bar">
       <div className="filter-bar__types">
-        {TYPES.map((t) => (
+        {TYPES.map((type) => (
           <button
-            key={t}
-            className={`filter-btn${activeType === t ? ' active' : ''}`}
-            onClick={() => onTypeChange(t)}
+            key={type}
+            className={`filter-btn${activeType === type ? ' active' : ''}`}
+            onClick={() => onTypeChange(type)}
           >
-            {t}
+            {t(TYPE_LABEL_KEYS[type])}
           </button>
         ))}
       </div>
@@ -55,7 +70,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         <input
           className="filter-search"
           type="text"
-          placeholder="Search assets..."
+          placeholder={t('filter.search')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -63,7 +78,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         <input
           className="filter-search filter-tag-search"
           type="text"
-          placeholder="Filter by tag..."
+          placeholder={t('filter.tagFilter')}
           value={tagFilter}
           onChange={(e) => onTagFilterChange(e.target.value)}
         />
@@ -80,21 +95,21 @@ const FilterBar: React.FC<FilterBarProps> = ({
           ))}
         </select>
 
-        <span className="filter-bar__count">{totalCount} assets</span>
+        <span className="filter-bar__count">{totalCount} {t('filter.assets')}</span>
 
         <button
           className="filter-btn-sm"
           onClick={onSelectAll}
           disabled={totalCount === 0}
         >
-          Select All
+          {t('filter.selectAll')}
         </button>
         <button
           className="filter-btn-sm"
           onClick={onDeselectAll}
           disabled={selectedCount === 0}
         >
-          Deselect
+          {t('filter.deselect')}
         </button>
       </div>
     </div>

@@ -11,6 +11,7 @@ import UploadPanel from './components/UploadPanel';
 import GeneratePanel from './components/GeneratePanel';
 import ApiKeyModal from './components/ApiKeyModal';
 import { useWebSocket } from './hooks/useWebSocket';
+import { t, useLang } from './i18n';
 import './App.css';
 
 interface Toast {
@@ -29,6 +30,7 @@ interface ProgressItem {
 let toastIdCounter = 0;
 
 function App() {
+  const [lang, setLangFn] = useLang();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState('all');
@@ -151,19 +153,26 @@ function App() {
       <header className="topbar">
         <div className="topbar__brand">
           <span className="topbar__icon">🎮</span>
-          <span className="topbar__title">Game Asset Manager</span>
+          <span className="topbar__title">{t('app.title')}</span>
         </div>
         <div className="topbar__progress">
           <ProgressBar items={progressItems} />
         </div>
         <div className="topbar__actions">
+          <button
+            className="topbar__lang"
+            onClick={() => setLangFn(lang === 'en' ? 'zh' : 'en')}
+            title="Switch language"
+          >
+            {lang === 'en' ? '中' : 'EN'}
+          </button>
           <button className="topbar__btn topbar__btn--upload" onClick={() => setShowUpload(true)}>
-            Upload
+            {t('app.upload')}
           </button>
           <button className="topbar__btn topbar__btn--generate" onClick={() => setShowGenerate(true)}>
-            Generate
+            {t('app.generate')}
           </button>
-          <button className="topbar__refresh" onClick={refresh} title="Refresh">
+          <button className="topbar__refresh" onClick={refresh} title={t('app.refresh')}>
             ↺
           </button>
         </div>
@@ -197,12 +206,12 @@ function App() {
           {loading ? (
             <div className="loading-state">
               <div className="spinner" />
-              <span>Loading assets...</span>
+              <span>{t('loading.assets')}</span>
             </div>
           ) : filteredAssets.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state__icon">📦</div>
-              <div>No assets found</div>
+              <div>{t('empty.noAssets')}</div>
             </div>
           ) : (
             <div className="asset-grid">

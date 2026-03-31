@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Asset } from '../api';
 import { api } from '../api';
 import CompareView from './CompareView';
+import { t, useLang } from '../i18n';
 
 interface Version {
   version: number;
@@ -32,6 +33,7 @@ function formatDate(iso: string): string {
 }
 
 const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, onToast }) => {
+  useLang();
   const [versions, setVersions] = useState<Version[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [rollingBack, setRollingBack] = useState<number | null>(null);
@@ -128,27 +130,27 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, on
         <table className="detail-table">
           <tbody>
             <tr>
-              <td>Type</td>
+              <td>{t('detail.type')}</td>
               <td><span className="detail-badge">{asset.type}</span></td>
             </tr>
             <tr>
-              <td>Dimensions</td>
+              <td>{t('detail.size')}</td>
               <td>{asset.width} × {asset.height}</td>
             </tr>
             <tr>
-              <td>Size</td>
+              <td>{t('detail.fileSize')}</td>
               <td>{formatSize(asset.size_bytes)}</td>
             </tr>
             <tr>
-              <td>Model</td>
+              <td>{t('detail.model')}</td>
               <td>{asset.model || '—'}</td>
             </tr>
             <tr>
-              <td>Style</td>
+              <td>{t('detail.style')}</td>
               <td>{asset.style || '—'}</td>
             </tr>
             <tr>
-              <td>Generated</td>
+              <td>{t('detail.time')}</td>
               <td>{formatDate(asset.generated_at)}</td>
             </tr>
           </tbody>
@@ -156,13 +158,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, on
 
         {asset.prompt && (
           <div className="detail-section">
-            <div className="detail-section__label">Prompt</div>
+            <div className="detail-section__label">{t('detail.prompt')}</div>
             <div className="detail-section__text">{asset.prompt}</div>
           </div>
         )}
 
         <div className="detail-section">
-          <div className="detail-section__label">Tags</div>
+          <div className="detail-section__label">{t('detail.tags')}</div>
           <div className="detail-tags">
             {tags.map((tag) => (
               <span key={tag} className="detail-tag">
@@ -179,7 +181,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, on
               <input
                 className="detail-tag-input"
                 type="text"
-                placeholder="Add tag..."
+                placeholder={t('detail.addTag')}
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddTag(); }}
@@ -196,7 +198,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, on
 
         {Object.keys(relationships).length > 0 && (
           <div className="detail-section">
-            <div className="detail-section__label">Relationships</div>
+            <div className="detail-section__label">{t('detail.relationships')}</div>
             {Object.entries(relationships).map(([key, val]) => (
               <div key={key} className="detail-relation">
                 <span className="detail-relation__key">{key}:</span>
@@ -209,11 +211,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, on
         )}
 
         <div className="detail-section">
-          <div className="detail-section__label">Version History</div>
+          <div className="detail-section__label">{t('detail.versions')}</div>
           {loadingVersions ? (
-            <div className="detail-loading">Loading...</div>
+            <div className="detail-loading">{t('detail.loading')}</div>
           ) : versions.length === 0 ? (
-            <div className="detail-empty">No version history</div>
+            <div className="detail-empty">{t('detail.noVersions')}</div>
           ) : (
             <ul className="detail-versions">
               {versions.map((v) => (
@@ -225,13 +227,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ asset, onClose, onRefresh, on
                     className="detail-version__compare"
                     onClick={() => setCompareVersion(v.version)}
                     title="Compare with current"
-                  >Compare</button>
+                  >{t('detail.compare')}</button>
                   <button
                     className="detail-version__rollback"
                     onClick={() => handleRollback(v.version)}
                     disabled={rollingBack === v.version}
                   >
-                    {rollingBack === v.version ? '...' : 'Rollback'}
+                    {rollingBack === v.version ? '...' : t('detail.rollback')}
                   </button>
                 </li>
               ))}

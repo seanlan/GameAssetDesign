@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { t, useLang } from '../i18n';
 
 interface CompareViewProps {
   beforeUrl: string;
@@ -7,12 +8,13 @@ interface CompareViewProps {
 }
 
 const CompareView: React.FC<CompareViewProps> = ({ beforeUrl, afterUrl, onClose }) => {
+  useLang();
   const [position, setPosition] = useState(50); // percentage
 
   return (
     <div className="compare-view">
       <div className="compare-view__header">
-        <span className="compare-view__title">Before / After</span>
+        <span className="compare-view__title">{t('compare.title')}</span>
         <button className="compare-view__close" onClick={onClose}>✕</button>
       </div>
       <div
