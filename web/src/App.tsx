@@ -52,7 +52,8 @@ function App() {
         searchVal || undefined,
         sortVal
       );
-      setAssets(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : (data?.assets ?? []);
+      setAssets(list);
     } catch {
       addToast('Failed to load assets', 'error');
     } finally {
