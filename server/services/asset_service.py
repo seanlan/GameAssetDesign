@@ -30,7 +30,7 @@ class AssetService:
 
     def __init__(self, project_root: str | None = None):
         self.project_root = project_root or os.getcwd()
-        self.output_dir = os.path.join(PROJECT_ROOT, "output")
+        self.output_dir = os.path.join(self.project_root, "output")
         self.tmp_dir = os.path.join(self.output_dir, ".tmp")
         self.manifest_path = os.path.join(self.output_dir, "manifest.json")
 

@@ -36,9 +36,13 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
     setLoading(true);
     try {
       for (const asset of selected) {
-        await api.refine(asset.name, refineType, note);
+        const res = await api.refine(asset.name, refineType, note);
+        if (res?.error) {
+          onToast(`Refine error: ${res.error}`, 'error');
+          return;
+        }
       }
-      onToast(`Refine submitted for ${selected.length} asset(s)`, 'success');
+      onToast(`Refined ${selected.length} asset(s)`, 'success');
       onRefresh();
     } catch {
       onToast('Refine failed', 'error');
@@ -137,7 +141,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
               onClick={handleRefine}
               disabled={loading}
             >
-              Refine
+              {loading ? 'Working...' : 'Refine'}
             </button>
           </div>
         </div>

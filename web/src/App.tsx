@@ -6,6 +6,9 @@ import FilterBar from './components/FilterBar';
 import ActionPanel from './components/ActionPanel';
 import DetailPanel from './components/DetailPanel';
 import ProgressBar from './components/ProgressBar';
+import UploadPanel from './components/UploadPanel';
+import GeneratePanel from './components/GeneratePanel';
+import ApiKeyModal from './components/ApiKeyModal';
 import { useWebSocket } from './hooks/useWebSocket';
 import './App.css';
 
@@ -34,6 +37,9 @@ function App() {
   const [detailAsset, setDetailAsset] = useState<Asset | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
+  const [showGenerate, setShowGenerate] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const addToast = useCallback((message: string, kind: 'info' | 'success' | 'error') => {
@@ -67,13 +73,21 @@ function App() {
       if (Array.isArray(data)) {
         setProgressItems(data);
       } else if (data && typeof data === 'object') {
-        // Support object format: { character: { required: 5, completed: 3 }, ... }
-        const items: ProgressItem[] = Object.entries(data).map(([type, val]: [string, any]) => ({
-          type,
-          required: val.required ?? 0,
-          completed: val.completed ?? 0,
-          label: val.label,
-        }));
+        // API format: { configured: bool, has_requirements: bool, progress: { characters: {total, done}, ... } }
+        const progressMap: Record<string, any> = data.progress ?? data;
+        const boolKeys = new Set(['configured', 'has_requirements']);
+        const items: ProgressItem[] = Object.entries(progressMap)
+          .filter(([key]) => !boolKeys.has(key))
+          .map(([type, val]: [string, any]) => {
+            if (val && typeof val === 'object') {
+              const total = val.total ?? val.required ?? 0;
+              const done = val.done ?? val.completed ?? 0;
+              const label = type.charAt(0).toUpperCase() + type.slice(1);
+              return { type, required: total, completed: done, label };
+            }
+            return null;
+          })
+          .filter(Boolean) as ProgressItem[];
         setProgressItems(items);
       }
     } catch {
@@ -136,6 +150,12 @@ function App() {
           <ProgressBar items={progressItems} />
         </div>
         <div className="topbar__actions">
+          <button className="topbar__btn topbar__btn--upload" onClick={() => setShowUpload(true)}>
+            Upload
+          </button>
+          <button className="topbar__btn topbar__btn--generate" onClick={() => setShowGenerate(true)}>
+            Generate
+          </button>
           <button className="topbar__refresh" onClick={refresh} title="Refresh">
             ↺
           </button>
@@ -205,6 +225,26 @@ function App() {
         onToast={addToast}
         onClearSelection={() => setSelectedNames(new Set())}
       />
+
+      {/* Modals */}
+      {showUpload && (
+        <UploadPanel
+          onClose={() => setShowUpload(false)}
+          onToast={addToast}
+          onRefresh={refresh}
+        />
+      )}
+      {showGenerate && (
+        <GeneratePanel
+          onClose={() => setShowGenerate(false)}
+          onToast={addToast}
+          onRefresh={refresh}
+          onApiKeyError={() => setShowApiKey(true)}
+        />
+      )}
+      {showApiKey && (
+        <ApiKeyModal onClose={() => setShowApiKey(false)} />
+      )}
 
       {/* Toast notifications */}
       <div className="toast-container">

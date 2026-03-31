@@ -36,7 +36,7 @@ app.include_router(project_router, prefix="/api")
 app.include_router(ws_router)
 
 # Serve output images as static files
-output_dir = os.path.join(PROJECT_ROOT, "output")
+output_dir = os.path.join(os.getcwd(), "output")
 if os.path.isdir(output_dir):
     app.mount("/output", StaticFiles(directory=output_dir), name="output")
 

@@ -6,7 +6,6 @@ from datetime import datetime
 
 from server.services.asset_service import AssetService
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class AIService:
@@ -64,7 +63,7 @@ class AIService:
         )
 
         # Extract image from response
-        output_dir = os.path.join(PROJECT_ROOT, "output", self._type_to_dir(asset_type))
+        output_dir = os.path.join(self.asset_service.output_dir, self._type_to_dir(asset_type))
         os.makedirs(output_dir, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

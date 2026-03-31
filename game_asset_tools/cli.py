@@ -145,6 +145,7 @@ def _cmd_extract(args):
     results = extract_elements(
         source_path=args.input, elements=elements, output_dir=args.output_dir,
         remove_bg=args.remove_bg, trim=args.do_trim, crop_padding=args.padding,
+        chromakey=args.chromakey,
     )
     print(f"Extracted {len(results)} elements")
     for r in results:
@@ -291,6 +292,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ext.add_argument("--no-remove-bg", dest="remove_bg", action="store_false", default=True)
     p_ext.add_argument("--no-trim", dest="do_trim", action="store_false", default=True)
     p_ext.add_argument("--padding", type=int, default=4, help="Crop padding pixels")
+    p_ext.add_argument("--chromakey", action="store_true", help="Use chromakey removal instead of rembg")
 
     # --- version ---
     p_ver = subparsers.add_parser("version", help="Manage asset versions")

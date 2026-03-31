@@ -92,6 +92,22 @@ export const api = {
     return res.json();
   },
 
+  async analyzeDesign(file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${BASE_URL}/api/analyze`, { method: 'POST', body: form });
+    return res.json();
+  },
+
+  async extractAssets(designId?: string) {
+    const res = await fetch(`${BASE_URL}/api/extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(designId ? { design_id: designId } : {}),
+    });
+    return res.json();
+  },
+
   getImageUrl(asset: Asset) {
     return `${BASE_URL}${asset.image_url}`;
   },

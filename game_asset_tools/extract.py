@@ -127,8 +127,9 @@ def _process_element(
     remove_bg: bool,
     trim: bool,
     crop_padding: int,
+    chromakey: bool = False,
 ) -> None:
-    """Crop, optionally remove background, optionally trim a single element."""
+    """Crop, optionally remove background (rembg or chromakey), optionally trim."""
     bbox = item["bbox"]
     element_type = item.get("type", "")
 
@@ -138,8 +139,14 @@ def _process_element(
     # Step 2: remove background (skip for background type)
     needs_remove_bg = item.get("needs_remove_bg", remove_bg)
     if needs_remove_bg and element_type != "background":
-        from game_asset_tools.remove_bg import remove_background
-        remove_background(output_path, output_path)
+        if chromakey:
+            # Use chromakey removal (better for complex assets)
+            from game_asset_tools.chromakey import remove_chromakey
+            chroma_color = item.get("chromakey_color", "auto")
+            remove_chromakey(output_path, output_path, color=chroma_color, despill=True)
+        else:
+            from game_asset_tools.remove_bg import remove_background
+            remove_background(output_path, output_path)
 
     # Step 3: trim transparent
     needs_trim = item.get("needs_trim", trim)
@@ -156,6 +163,7 @@ def extract_elements(
     remove_bg: bool = False,
     trim: bool = False,
     crop_padding: int = 0,
+    chromakey: bool = False,
 ) -> list[dict[str, Any]]:
     """Extract all elements defined in the elements dict from the source image.
 
@@ -186,6 +194,7 @@ def extract_elements(
             remove_bg=remove_bg,
             trim=trim,
             crop_padding=crop_padding,
+            chromakey=chromakey,
         )
 
         results.append({
@@ -214,6 +223,7 @@ def extract_elements(
                 remove_bg=remove_bg,
                 trim=trim,
                 crop_padding=crop_padding,
+                chromakey=chromakey,
             )
 
             result: dict[str, Any] = {
