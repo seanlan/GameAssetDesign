@@ -1,36 +1,6 @@
 # Game Asset Design
 
-A Claude Code skill for generating, extracting, and managing 2D game assets. Combines AI image generation (Gemini) with a Python post-processing toolkit to produce game-engine-ready assets.
-
-## Features
-
-### Asset Generation
-Generate production-ready game assets with AI:
-- Characters, icons, UI elements, cards, sprite sheets, tilesets
-- 6 style presets: pixel, anime, cel_shading, watercolor, flat, realistic
-- Project config for consistent style across all assets
-
-### Design Image Extraction
-Extract individual assets from design mockups, screenshots, or reference images:
-
-```
-Design Image → Analyze (bbox calibration) → Crop → AI Refine (chroma key) → Remove Background
-```
-
-- AI-powered element detection with layer separation (top/middle/bottom)
-- Annotated preview for visual confirmation before extraction
-- Shared border/frame separation (border + content as independent assets)
-- Chroma key background removal — green (#00FF00) or magenta (#FF00FF), never white
-
-### Asset Management
-- Interactive HTML asset manager (filter, sort, select, refine)
-- Version history with rollback and side-by-side comparison
-- Refinement workflow: edge fix, AI edit, AI inpaint, style unify
-- Project progress dashboard with requirements tracking
-
-### Export & Packaging
-- Engine-specific export: Unity, Godot, Cocos, Web
-- Texture atlas packing (shelf-first-fit) with Phaser/generic metadata
+A Claude Code plugin for generating, extracting, and managing 2D game assets. Combines AI image generation (Gemini) with a Python post-processing toolkit and a web-based asset manager.
 
 ## Install
 
@@ -49,19 +19,80 @@ pip3 install -r requirements.txt
 ## Requirements
 
 - Python 3.10+
+- Node.js 18+ (for web UI)
 - Claude Code
-- `gemini-image` MCP server (for AI image generation/editing)
-- Optional: `imgbb` MCP server (for image sharing)
+- `gemini-image` MCP server (for AI generation/editing via Claude Code)
+- `GEMINI_API_KEY` env var (for web service AI features)
 
-## Usage
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/game-asset:init` | Initialize project config (style, engine, requirements) |
+| `/game-asset:generate` | Generate new assets with AI (characters, icons, UI, cards, sprites, tilesets) |
+| `/game-asset:analyze` | Analyze design image — identify elements, calibrate bounding boxes |
+| `/game-asset:extract` | Extract assets — crop, AI chroma key refine, remove background |
+| `/game-asset:manage` | Open asset manager (static HTML) |
+| `/game-asset:serve` | Start/stop web service (FastAPI + React) |
+| `/game-asset:refine` | Refine assets — edge fix, AI edit, inpaint, style unify |
+| `/game-asset:version` | Version management — history, rollback, compare |
+| `/game-asset:export` | Export for game engines — Unity, Godot, Cocos, Web |
+| `/game-asset:atlas` | Texture atlas packing |
+
+## Workflows
+
+### Generate from scratch
 
 ```
-/game-asset generate a fire mage character portrait
-/game-asset extract assets from this UI design [image path]
-/game-asset open asset manager
-/game-asset export for Unity
-/game-asset pack icons into texture atlas
+/game-asset:init → /game-asset:generate → /game-asset:serve → /game-asset:refine → /game-asset:export
 ```
+
+### Extract from design image
+
+```
+/game-asset:init → /game-asset:analyze → /game-asset:extract → /game-asset:serve → /game-asset:refine → /game-asset:export
+```
+
+## Web Asset Manager
+
+Full-featured web UI for browsing, refining, and exporting assets.
+
+```bash
+# Start backend + frontend
+GEMINI_API_KEY=your_key uvicorn server.main:app --reload --port 8080 &
+cd web && npm install && npm run dev &
+
+# Open http://localhost:5173
+```
+
+Features:
+- Asset grid with thumbnails, filtering, sorting, search
+- Detail panel with metadata, version history, rollback
+- Batch operations: refine, delete, reclassify, export, atlas
+- AI operations: generate, edit, inpaint (via Gemini API)
+- Project progress dashboard
+- Real-time updates via WebSocket
+
+### API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/assets` | List assets (filter, sort, search) |
+| GET | `/api/assets/:name` | Asset details |
+| PUT | `/api/assets/:name` | Rename / reclassify |
+| DELETE | `/api/assets/:name` | Delete asset |
+| GET | `/api/assets/:name/versions` | Version history |
+| POST | `/api/assets/:name/versions/rollback` | Rollback |
+| POST | `/api/generate` | AI generate |
+| POST | `/api/analyze` | Analyze design image |
+| POST | `/api/extract` | Extract elements |
+| POST | `/api/refine` | Refine asset |
+| POST | `/api/export` | Engine export |
+| POST | `/api/atlas` | Atlas packing |
+| GET | `/api/progress` | Project progress |
+| WS | `/ws` | Real-time updates |
+
+Full Swagger docs at http://localhost:8080/docs
 
 ## Python CLI
 
@@ -73,39 +104,63 @@ python3 -m game_asset_tools --help
 
 | Command | Description |
 |---------|-------------|
-| `resize` | Resize/crop images (contain, cover, stretch) |
-| `remove_bg` | Background removal via rembg |
+| `resize` | Resize/crop (contain, cover, stretch) |
+| `remove_bg` | Background removal (rembg) |
 | `trim` | Trim transparent edges |
-| `sprite_sheet` | Assemble sprite sheet + frame metadata |
-| `card_composer` | Card composition with text rendering |
-| `video_to_frames` | Extract frames from video + dedup |
+| `sprite_sheet` | Sprite sheet assembly + metadata |
+| `card_composer` | Card composition + text rendering |
+| `video_to_frames` | Video frame extraction + dedup |
 | `tileset` | Tileset assembly + seamless blending |
-| `annotate` | Draw element detection boxes on design image |
-| `extract` | Batch extract elements from design image |
-| `version` | Asset version management (save/list/rollback/compare) |
-| `manager` | Generate interactive asset manager HTML |
+| `annotate` | Draw element detection boxes |
+| `extract` | Batch extract from design image |
+| `version` | Version management (save/list/rollback/compare) |
+| `manager` | Generate asset manager HTML |
 | `atlas` | Texture atlas packing |
-| `export` | Engine-specific export (Unity/Godot/Cocos/Web) |
-| `preview` | Generate asset preview page |
+| `export` | Engine export (Unity/Godot/Cocos/Web) |
+| `preview` | Asset preview page |
 
-## Project Structure
+## Architecture
 
 ```
-skills/game-asset.md     — Claude Code skill file
-game_asset_tools/        — Python post-processing toolkit (16 commands)
-projects/                — Project configs (style, sizes, requirements)
-templates/               — Card templates, fonts
-output/                  — Asset output directory
-tests/                   — 130+ tests
+┌─────────────────────┐     ┌──────────────────┐
+│  React Frontend     │────→│  FastAPI Backend  │────→ game_asset_tools (Python)
+│  localhost:5173     │←────│  localhost:8080   │────→ Gemini API
+│  (Vite + React TS)  │ WS  │  (22 API routes)  │────→ output/
+└─────────────────────┘     └──────────────────┘
+
+┌─────────────────────┐
+│  Claude Code        │────→ game_asset_tools (Python)
+│  /game-asset:*      │────→ MCP gemini-image
+│  (10 commands)      │
+└─────────────────────┘
 ```
 
 ## Key Design Decisions
 
-**Background removal**: AI chroma key + Python color removal. rembg alone destroys semi-transparent elements (sword blades, glow effects, icon borders). The pipeline: AI replaces background with chroma key color (green/magenta) → Python precisely removes that color by distance calculation → despill correction.
+**Chroma key background removal**: AI replaces background with green (#00FF00) or magenta (#FF00FF) — never white (blends with highlights). Python removes the chroma key color by distance calculation + despill correction. rembg only for simple shapes (buttons).
 
-**Icon border/content separation**: Icons with shared borders are split into reusable border (transparent center) + swappable content (with background plate). AI removes border and extends background fill; Python handles chroma key removal for the border asset.
+**Design image extraction pipeline**: `Analyze (bbox calibration) → Crop → AI refine (chroma key bg) → Remove background`. Claude's visual bbox estimation has 20-50px error — pixel-level color scanning calibrates boundaries.
 
-**Bbox calibration**: Claude's visual coordinate estimation has 20-50px error. Pixel-level color scanning calibrates boundaries before extraction.
+**Icon border/content separation**: Shared borders extracted once (AI fills center with magenta → Python removes). Content keeps its background plate (AI removes border, extends fill). Game engine composites at runtime.
+
+## Project Structure
+
+```
+.claude-plugin/          — Plugin metadata
+commands/                — 10 slash commands
+skills/game-asset/       — Skill routing entry
+server/                  — FastAPI backend
+  api/                   — REST API routes
+  services/              — Business logic + AI service
+web/                     — React frontend (Vite + TypeScript)
+  src/components/        — UI components
+  src/hooks/             — WebSocket hook
+game_asset_tools/        — Python toolkit (16 modules)
+projects/                — Project configs
+templates/               — Card templates, fonts
+output/                  — Asset output
+tests/                   — 130+ tests
+```
 
 ## License
 
