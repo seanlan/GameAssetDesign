@@ -193,6 +193,13 @@ def _cmd_atlas(args):
     print(f"Atlas packed: {args.output}, meta: {args.meta}")
 
 
+def _cmd_chromakey(args):
+    from game_asset_tools.chromakey import remove_chromakey
+    remove_chromakey(args.input, args.output, color=args.color,
+                     despill=not args.no_despill)
+    print(f"Chroma key removed: {args.output}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="game_asset_tools",
@@ -324,6 +331,13 @@ def _build_parser() -> argparse.ArgumentParser:
     p_atl.add_argument("--padding", type=int, default=2)
     p_atl.add_argument("--format", default="generic", choices=["generic", "phaser"])
 
+    # --- chromakey ---
+    p_ck = subparsers.add_parser("chromakey", help="Remove chroma key background (green/magenta)")
+    p_ck.add_argument("--input", required=True, help="Input image path")
+    p_ck.add_argument("--output", required=True, help="Output image path")
+    p_ck.add_argument("--color", default="auto", choices=["auto", "green", "magenta"])
+    p_ck.add_argument("--no-despill", dest="no_despill", action="store_true")
+
     return parser
 
 
@@ -342,6 +356,7 @@ _COMMAND_HANDLERS = {
     "manager": _cmd_manager,
     "export": _cmd_export,
     "atlas": _cmd_atlas,
+    "chromakey": _cmd_chromakey,
 }
 
 

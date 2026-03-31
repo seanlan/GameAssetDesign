@@ -187,3 +187,20 @@ def test_cli_atlas(tmp_dir):
     )
     assert result.returncode == 0
     assert os.path.exists(output)
+
+
+def test_cli_chromakey(tmp_dir):
+    img = Image.new("RGBA", (100, 100), (0, 255, 0, 255))
+    for x in range(30, 70):
+        for y in range(30, 70):
+            img.putpixel((x, y), (255, 0, 0, 255))
+    in_path = os.path.join(tmp_dir, "green.png")
+    out_path = os.path.join(tmp_dir, "result.png")
+    img.save(in_path)
+    result = subprocess.run(
+        [sys.executable, "-m", "game_asset_tools", "chromakey",
+         "--input", in_path, "--output", out_path, "--color", "green"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0
+    assert os.path.exists(out_path)
