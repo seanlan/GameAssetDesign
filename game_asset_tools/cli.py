@@ -201,6 +201,18 @@ def _cmd_chromakey(args):
     print(f"Chroma key removed: {args.output}")
 
 
+def _cmd_auto_detect(args):
+    from game_asset_tools.auto_detect import detect_elements
+    result = detect_elements(args.input, min_size=args.min_size, max_elements=args.max_elements)
+    output = args.output or os.path.join("output", ".tmp", "elements.json")
+    os.makedirs(os.path.dirname(output), exist_ok=True)
+    import json
+    with open(output, "w") as f:
+        json.dump(result, f, indent=2)
+    count = sum(len(v) for v in result["layers"].values())
+    print(f"Detected {count} elements -> {output}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="game_asset_tools",
@@ -340,6 +352,13 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ck.add_argument("--color", default="auto", choices=["auto", "green", "magenta"])
     p_ck.add_argument("--no-despill", dest="no_despill", action="store_true")
 
+    # --- auto_detect ---
+    p_ad = subparsers.add_parser("auto_detect", help="Auto-detect UI elements in a design image")
+    p_ad.add_argument("--input", required=True, help="Design image path")
+    p_ad.add_argument("--output", help="Output elements.json path")
+    p_ad.add_argument("--min-size", dest="min_size", type=int, default=30)
+    p_ad.add_argument("--max-elements", dest="max_elements", type=int, default=20)
+
     return parser
 
 
@@ -359,6 +378,7 @@ _COMMAND_HANDLERS = {
     "export": _cmd_export,
     "atlas": _cmd_atlas,
     "chromakey": _cmd_chromakey,
+    "auto_detect": _cmd_auto_detect,
 }
 
 

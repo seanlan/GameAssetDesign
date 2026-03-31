@@ -108,6 +108,21 @@ export const api = {
     return res.json();
   },
 
+  async annotateImage(sourcePath: string, elementsPath: string) {
+    const params = new URLSearchParams({ source: sourcePath, elements: elementsPath });
+    const res = await fetch(`${BASE_URL}/api/annotate?${params}`);
+    return res.json();
+  },
+
+  async saveElements(elements: any) {
+    const res = await fetch(`${BASE_URL}/api/elements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(elements),
+    });
+    return res.json();
+  },
+
   getImageUrl(asset: Asset) {
     return `${BASE_URL}${asset.image_url}`;
   },

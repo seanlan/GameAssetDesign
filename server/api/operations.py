@@ -1,7 +1,8 @@
 """AI operations API — generate, analyze, extract, refine, export, atlas."""
 
 import os
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+import json
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
 from pydantic import BaseModel
 
 from server.services.asset_service import AssetService
@@ -129,6 +130,44 @@ async def export_assets(req: ExportRequest):
         return {"engine": req.engine, "total": result["total"], "export_dir": f"./{req.engine}_export/"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/annotate")
+async def annotate_image_endpoint(
+    source: str = Query(..., description="Source design image path"),
+    elements: str = Query(..., description="Elements JSON file path"),
+):
+    """Re-generate annotated preview from an existing elements.json."""
+    try:
+        if not os.path.isfile(source):
+            raise HTTPException(status_code=400, detail=f"Source image not found: {source}")
+        if not os.path.isfile(elements):
+            raise HTTPException(status_code=400, detail=f"Elements file not found: {elements}")
+
+        from game_asset_tools.annotate import annotate_image
+        annotated_path = os.path.join(asset_service.tmp_dir, "annotated.png")
+        os.makedirs(asset_service.tmp_dir, exist_ok=True)
+
+        with open(elements) as f:
+            elements_data = json.load(f)
+
+        annotate_image(source, elements_data, annotated_path)
+        return {"annotated_url": "/output/.tmp/annotated.png"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/elements")
+async def save_elements(elements: dict):
+    """Save edited elements.json."""
+    path = os.path.join(asset_service.tmp_dir, "elements.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(elements, f, indent=2)
+    return {"saved": path}
 
 
 @router.post("/atlas")
