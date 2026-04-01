@@ -1,4 +1,0 @@
-[      50ms] [WARNING] WebSocket connection to 'ws://localhost:8080/ws' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/useWebSocket.ts:52
-[   72142ms] [WARNING] WebSocket connection to 'ws://localhost:8080/ws' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/useWebSocket.ts:52
-[   73183ms] [WARNING] WebSocket connection to 'ws://localhost:8080/ws' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/useWebSocket.ts:52
-[ 1009115ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8080/api/export:0

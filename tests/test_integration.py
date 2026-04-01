@@ -65,11 +65,29 @@ def test_full_sprite_pipeline(tmp_dir):
     assert len(meta["frames"]) == 6
 
 
-def test_config_and_style_integration():
-    """Test loading the example config and generating style keywords."""
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config = load_config(os.path.join(project_root, "projects", "example_project.yaml"))
-    assert config["project"]["name"] == "Example RPG"
+def test_config_and_style_integration(tmp_dir):
+    """Test loading a config and generating style keywords."""
+    config_path = os.path.join(tmp_dir, "game-assets.yaml")
+    with open(config_path, "w") as f:
+        f.write("""
+project:
+  name: "Test RPG"
+  engine: "unity"
+style:
+  preset: "anime"
+  keywords: "fantasy theme"
+  palette: ["#FF0000"]
+assets:
+  character:
+    sizes: [512, 1024]
+    format: "png"
+    transparent: true
+output:
+  base_dir: "output/"
+  naming: "{type}_{name}"
+""")
+    config = load_config(config_path)
+    assert config["project"]["name"] == "Test RPG"
 
     keywords = get_style_keywords(config)
     assert "anime style" in keywords
