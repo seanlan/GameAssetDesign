@@ -1,0 +1,37 @@
+type,step_order,step_name,tool,description,priority,conditions
+character,1,crop,extract,Generous bbox including weapons/feet - bigger is better,critical,always
+character,2,ai_greenscreen,gemini_edit,"Change background to solid green #00FF00, remove UI elements",critical,needs_transparent=true
+character,3,chromakey,chromakey,Python green color removal + despill correction,critical,after_greenscreen
+character,4,trim,trim,Remove transparent edges with padding=10,high,after_chromakey
+character,5,resize,resize,Scale to target sizes from config,medium,always
+background,1,crop,extract,Full image or designated region,critical,always
+background,2,inpaint,gemini_edit,Remove foreground characters and UI elements,high,has_foreground
+icon,1,crop,extract,Crop icon area from design,critical,always
+icon,2,regenerate,nanobanana_generate,Regenerate clean version from description - DO NOT AI-edit the crop,critical,from_design_image
+icon,3,resize,resize,Scale to target sizes from config,medium,always
+icon_set,1,generate_sheet,nanobanana_generate,"Generate all icons in one image for style consistency, then split",critical,batch_generation
+icon_set,2,split,python_crop,Split the generated sheet into individual icons,critical,after_generate_sheet
+icon_set,3,resize,resize,Scale each to target sizes,medium,always
+icon_border,1,crop,extract,Crop icon with border from design,critical,always
+icon_border,2,ai_hollow,gemini_edit,Fill center with magenta #FF00FF keeping only border,high,separate_border
+icon_border,3,chromakey,chromakey,Python magenta removal for transparent center,high,after_hollow
+icon_border,4,cleanup,python_pixel,Remove dark outer pixels (forest residue),medium,has_residue
+icon_content,1,crop,extract,Crop icon area from design,critical,always
+icon_content,2,regenerate,nanobanana_generate,Regenerate clean icon content without border on dark background,critical,best_quality
+ui_button,1,crop,extract,Crop button area,critical,always
+ui_button,2,rembg,remove_bg,Direct rembg - simple circular/rectangular shapes only,critical,simple_shape
+ui_button,3,trim,trim,Remove transparent edges with padding=4,high,after_rembg
+ui_bar,1,crop,extract,Tight crop of bar region only,critical,always
+ui_bar,2,none,none,No background removal needed - keep as-is,info,always
+card,1,generate,gemini_generate,One-shot generation: character + border + title in single image,critical,recommended
+card,2,resize,resize,Scale to card dimensions 750x1050,high,always
+sprite,1,generate_ref,gemini_generate,Generate hero reference image first,critical,always
+sprite,2,video,sora_image_to_video,Generate animation video from hero image,high,video_method
+sprite,3,extract_frames,video_to_frames,Extract frames from video with dedup,high,after_video
+sprite,4,rembg,remove_bg,Remove background from each frame,high,needs_transparent
+sprite,5,assemble,sprite_sheet,Assemble into sprite sheet + export metadata,critical,always
+tileset,1,generate,gemini_generate,"Generate with 'seamless tileable' in prompt",critical,always
+tileset,2,assemble,tileset,Assemble tiles with --seamless flag,high,multiple_tiles
+nine_slice,1,crop,extract,Crop UI element with border,critical,always
+nine_slice,2,slice,nine_slice,Cut into 9 parts with specified border width,critical,always
+nine_slice,3,preview,nine_slice,Generate stretch preview for verification,medium,optional

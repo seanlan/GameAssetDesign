@@ -1,0 +1,20 @@
+priority,category,rule,reason,applies_to
+1,quality,Never AI-edit more than once — each edit degrades quality,AI editing is lossy; regeneration produces cleaner results,all
+1,quality,"For icons/small elements: regenerate from description, don't edit the crop",AI editing on small images creates artifacts and blur,icon
+1,quality,Generate icon sets in one image then split for style consistency,Same generation context = same style,icon_set
+2,bg_removal,Use chroma key (green/magenta) + Python removal for characters,rembg destroys weapons/glow effects/thin details,character
+2,bg_removal,Use rembg only for simple geometric shapes (circular buttons),rembg works well only on simple contours,ui_button
+2,bg_removal,Never use white as chroma key color,White blends with highlights and sword glints,all
+2,bg_removal,"Select chroma key by contrast: warm content→green, cool→magenta",Maximum color distance prevents content damage,all
+3,bbox,Bbox must be generous — bigger is better,Truncated content (feet/weapons) cannot be recovered,extract
+3,bbox,"Claude's visual bbox estimation has 20-50px error, always calibrate",Pixel-level scanning finds exact boundaries,extract
+3,bbox,For dense elements use pixel color scanning to find boundaries,"Edge detection > visual estimation for icon rows, button groups",extract
+4,style,Store reference image in project config for cross-session consistency,One effect image defines the entire game's visual direction,all
+4,style,All same-type assets should use identical prompt template with only content varied,Template consistency > per-asset prompt crafting,all
+4,style,Use NanoBanana style enum when available (anime/ghibli/pixel etc),Native style params produce more consistent results than prompt-only,generation
+5,workflow,Always show generated image for user confirmation before post-processing,Prevents wasted post-processing on rejected images,all
+5,workflow,Save version before any refinement operation,Enables rollback if refinement makes things worse,refine
+5,workflow,Update manifest and regenerate asset manager after every operation,Keeps management view in sync with actual files,all
+6,i18n,Translate Chinese user descriptions to English for AI prompts,AI models generate better images from English prompts,generation
+7,export,Include engine-specific metadata in exports (Unity sprite_border etc),Reduces manual setup work in game engine,export
+8,organization,Use plural directory names (characters/ icons/ backgrounds/),Consistent with game engine conventions,all

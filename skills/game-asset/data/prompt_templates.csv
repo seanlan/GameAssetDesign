@@ -1,0 +1,10 @@
+type,template_name,prompt_template,variables
+character,full_body,"A {name} character, {description}, full body, battle stance, {style_keywords}","name,description,style_keywords"
+character,portrait,"A {name} character portrait, {description}, head and shoulders, {style_keywords}","name,description,style_keywords"
+icon,single,"A {name} spell skill icon for RPG game, {description}, dark gradient background, centered glow effect, game UI icon design, no border, no frame, clean square icon, {style_keywords}","name,description,style_keywords"
+icon_set,batch,"A set of {count} RPG game skill icons in a horizontal row, evenly spaced on dark background: {item_list}. All icons have the same style: dark gradient background, centered glowing element, {style_keywords}, no borders, consistent lighting and detail level.","count,item_list,style_keywords"
+background,scene,"A {name} game scene background, {description}, wide landscape, environment art, {style_keywords}","name,description,style_keywords"
+card,complete,"A complete RPG character card featuring {name}, {description}, ornate border frame, title text '{title}' at bottom, dark background, game card design, {style_keywords}","name,description,title,style_keywords"
+ui_button,simple,"A {name} game button, {description}, clean circular/rounded shape, {style_keywords}","name,description,style_keywords"
+tileset,seamless,"A seamless tileable {name} texture for game tileset, {description}, repeating pattern, top-down view, {style_keywords}","name,description,style_keywords"
+sprite,reference,"A {name} character, {description}, neutral standing pose, full body, centered, clean outline, {style_keywords}","name,description,style_keywords"

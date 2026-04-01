@@ -143,6 +143,11 @@ def check_progress(requirements: dict, output_dir: str) -> dict:
     return progress
 
 
+def get_reference_image(config: dict) -> str | None:
+    """Get the global style reference image path."""
+    return config.get("style", {}).get("reference_image")
+
+
 def get_templates(config: dict) -> list[dict]:
     """Get asset generation templates from config."""
     return config.get("templates", [])

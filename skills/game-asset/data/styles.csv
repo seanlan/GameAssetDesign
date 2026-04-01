@@ -1,0 +1,10 @@
+preset,display_name,prompt_keywords,nanobanana_style,gemini_style,best_for,color_tone,chroma_key
+pixel,Pixel Art,"pixel art, 16-bit style, clean pixels, no anti-aliasing",,pixel art,Retro/indie games,warm,magenta
+anime,Anime,"anime style, cel shading, vibrant colors, clean lines",anime,anime,JRPG/visual novel,warm,green
+cel_shading,Cel Shading,"cel shaded, flat colors, bold outlines, cartoon style",,cel shading,Cartoon style games,mixed,magenta
+watercolor,Watercolor,"watercolor painting, soft edges, muted colors",watercolor,watercolor,Artistic/narrative games,cool,magenta
+flat,Flat Design,"flat design, minimal shading, solid colors, vector style",,flat design,UI/casual games,mixed,green
+realistic,Realistic,"semi-realistic, detailed rendering, painterly style",,semi-realistic,Card games/RPG,warm,green
+ghibli,Ghibli,"studio ghibli style, warm colors, detailed backgrounds",ghibli,,Adventure/story games,warm,green
+cyberpunk,Cyberpunk,"cyberpunk style, neon lights, dark atmosphere, high tech",cyberpunk,,Sci-fi games,cool,magenta
+fantasy,Fantasy,"fantasy art style, magical, epic, detailed",fantasy,,Fantasy RPG,warm,green

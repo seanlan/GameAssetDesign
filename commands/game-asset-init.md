@@ -18,7 +18,8 @@ If fails: `pip install -r requirements.txt`
 1. Ask user for:
    - Project name
    - Game engine (unity / godot / cocos / web / custom)
-   - Art style preset (pixel / anime / cel_shading / watercolor / flat / realistic)
+   - Art style preset (pixel / anime / cel_shading / watercolor / flat / realistic / ghibli / cyberpunk / fantasy)
+   - Reference image path (a design mockup or effect image that defines the game's visual style)
    - Additional style keywords (optional)
    - Color palette (optional)
 

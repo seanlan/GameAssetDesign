@@ -1,0 +1,8 @@
+type,display_name,display_name_zh,description,default_sizes,aspect_ratio,transparent,output_dir,prompt_suffix
+character,Character,角色,Full-body character portraits,"512,1024",3:4,true,characters,"full body, battle stance, game character design"
+background,Background,背景,Scene backgrounds,"1920x1080,1280x720",16:9,false,backgrounds,"wide scene, environment art, game background"
+icon,Icon,图标,Skill/item icons with dark background plate,"64,128,256",1:1,false,icons,"game UI icon, dark gradient background, centered glow, no border, no frame"
+ui,UI Element,UI元素,Buttons/bars/panels,"64,128",1:1,true,ui,"clean game UI element, simple shape"
+card,Card,卡牌,Character cards with border and text,"750x1050",3:4,false,cards,"RPG character card, ornate border frame, game card design"
+sprite,Sprite Sheet,精灵图,Multi-frame animation sheets,"128x128",1:1,true,sprites,"game sprite frame, clean pose, consistent style"
+tileset,Tileset,瓦片,Tile grid for maps,"32x32",1:1,true,tilesets,"seamless tileable texture, repeating pattern, top-down view"
