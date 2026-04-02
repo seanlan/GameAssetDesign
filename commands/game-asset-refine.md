@@ -5,6 +5,13 @@ description: Refine and polish assets — edge fix, AI edit, inpaint missing par
 
 # Refine Assets
 
+## BEFORE refining
+
+1. Read `data/rules.csv` — priority 1 (quality rules: max 1 AI edit, regenerate > edit)
+2. Read `data/rules.csv` — priority 2 (bg removal: chroma key selection, rembg limits)
+3. Read `data/pipelines.csv` — check if the asset type has a specific refinement pipeline
+4. **Key rule: each AI edit degrades quality. Prefer regeneration for small assets (icons/UI).**
+
 ## Input
 
 User specifies which assets to refine and what to fix:

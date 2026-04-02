@@ -126,19 +126,26 @@ python3 -m game_asset_tools --help
 
 ## Knowledge Base
 
-The `data/` directory (when present) contains CSV reference tables used by the skill for prompting and validation:
+Structured data in `skills/game-asset/data/` drives all generation and processing decisions:
 
 | File | Description |
 |------|-------------|
-| `asset_types.csv` | Canonical asset type names and their properties (transparent, default size, engine mapping) |
-| `style_presets.csv` | Style preset definitions: keywords, palette hints, lighting cues per art style |
-| `engine_formats.csv` | Per-engine output format requirements (Unity, Godot, Cocos, Web) |
-| `chromakey_colors.csv` | Chroma key color definitions and HSV tolerance ranges for removal |
-| `naming_patterns.csv` | File naming convention templates per asset type and engine |
+| `asset_types.csv` | 7 asset types: sizes, aspect ratios, transparency, output dirs, prompt suffixes |
+| `pipelines.csv` | 30+ step-by-step processing rules per asset type with priority levels |
+| `styles.csv` | 9 style presets: NanoBanana/Gemini params, chroma key color selection |
+| `rules.csv` | 18 decision rules (priority 1-8): quality, bg removal, bbox, style, workflow |
+| `prompt_templates.csv` | 14 reusable prompt templates with negative prompts and usage notes |
 
-## Reference Images
+## Reference Image
 
-Place reference images in `projects/<project-name>/references/` to guide AI generation style. The `/game-asset:generate` command picks these up automatically when a project config is active. Supported formats: PNG, JPG, WebP.
+Set a global style reference in `game-assets.yaml`:
+
+```yaml
+style:
+  reference_image: "path/to/design_mockup.png"
+```
+
+All generated assets will match the visual style of this reference image. Use a complete design mockup (like a game screenshot with UI) to define the art direction.
 
 ## Architecture
 
@@ -177,7 +184,7 @@ web/                     — React frontend (Vite + TypeScript)
   src/components/        — UI components
   src/hooks/             — WebSocket hook
 game_asset_tools/        — Python toolkit (19 commands, 16 modules)
-projects/                — Project configs
+game-assets.yaml         — Project config (created by /game-asset:init)
 templates/               — Card templates, fonts
 output/                  — Asset output
 tests/                   — 160+ tests
