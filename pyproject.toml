@@ -1,13 +1,13 @@
 [project]
 name = "game-asset-tools"
-version = "0.1.0"
-description = "Python toolkit for game asset post-processing"
+version = "1.0.0"
+description = "Game asset design toolkit — generate, extract, and manage 2D game assets"
 requires-python = ">=3.10"
 dependencies = [
     "Pillow>=10.0",
     "rembg>=2.0",
-    "opencv-python-headless>=4.8,<4.10",
-    "numpy>=1.24,<1.27",
+    "opencv-python-headless>=4.8",
+    "numpy>=1.24",
     "pyyaml>=6.0",
 ]
 
@@ -16,3 +16,21 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
 ]
+server = [
+    "fastapi>=0.104",
+    "uvicorn>=0.24",
+    "python-multipart>=0.0.6",
+]
+
+[project.scripts]
+game-asset = "game_asset_tools.installer:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["game_asset_tools*", "commands*", "skills*", "server*", "hooks*", "templates*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.csv", "*.json", "*.sh"]
