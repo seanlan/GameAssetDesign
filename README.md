@@ -100,7 +100,7 @@ Full Swagger docs at http://localhost:8080/docs
 python3 -m game_asset_tools --help
 ```
 
-16 commands:
+19 commands:
 
 | Command | Description |
 |---------|-------------|
@@ -118,6 +118,27 @@ python3 -m game_asset_tools --help
 | `atlas` | Texture atlas packing |
 | `export` | Engine export (Unity/Godot/Cocos/Web) |
 | `preview` | Asset preview page |
+| `chromakey` | Remove chroma key background (green/magenta) |
+| `pipeline` | One-step: auto-detect → extract → chromakey → trim |
+| `nine_slice` | 9-slice an image for scalable UI |
+| `style_unify` | Show project style keywords for batch consistency |
+| `auto_detect` | Auto-detect UI elements in a design image |
+
+## Knowledge Base
+
+The `data/` directory (when present) contains CSV reference tables used by the skill for prompting and validation:
+
+| File | Description |
+|------|-------------|
+| `asset_types.csv` | Canonical asset type names and their properties (transparent, default size, engine mapping) |
+| `style_presets.csv` | Style preset definitions: keywords, palette hints, lighting cues per art style |
+| `engine_formats.csv` | Per-engine output format requirements (Unity, Godot, Cocos, Web) |
+| `chromakey_colors.csv` | Chroma key color definitions and HSV tolerance ranges for removal |
+| `naming_patterns.csv` | File naming convention templates per asset type and engine |
+
+## Reference Images
+
+Place reference images in `projects/<project-name>/references/` to guide AI generation style. The `/game-asset:generate` command picks these up automatically when a project config is active. Supported formats: PNG, JPG, WebP.
 
 ## Architecture
 
@@ -155,11 +176,11 @@ server/                  — FastAPI backend
 web/                     — React frontend (Vite + TypeScript)
   src/components/        — UI components
   src/hooks/             — WebSocket hook
-game_asset_tools/        — Python toolkit (16 modules)
+game_asset_tools/        — Python toolkit (19 commands, 16 modules)
 projects/                — Project configs
 templates/               — Card templates, fonts
 output/                  — Asset output
-tests/                   — 130+ tests
+tests/                   — 160+ tests
 ```
 
 ## License

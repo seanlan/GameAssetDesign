@@ -44,3 +44,17 @@ if os.path.isdir(output_dir):
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+# Serve React production build (if exists)
+# Must be registered AFTER all API routes so API takes priority
+web_dist = os.path.join(PROJECT_ROOT, "web", "dist")
+if os.path.isdir(web_dist):
+    from fastapi.responses import FileResponse
+
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        file_path = os.path.join(web_dist, path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(web_dist, "index.html"))

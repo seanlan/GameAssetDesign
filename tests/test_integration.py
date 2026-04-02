@@ -288,3 +288,83 @@ def test_export_pipeline(tmp_dir):
     assert result["total"] == 2
     assert os.path.exists(os.path.join(export_dir, "manifest.json"))
     assert os.path.isdir(os.path.join(export_dir, "images", "characters"))
+
+
+def test_chromakey_green_pipeline(tmp_dir):
+    """Full chromakey pipeline: create green bg image → remove → verify transparency."""
+    from game_asset_tools.chromakey import remove_chromakey
+    from game_asset_tools.trim import trim_transparent
+
+    # Create image with red content on green background
+    img = Image.new("RGBA", (200, 200), (0, 255, 0, 255))
+    for x in range(50, 150):
+        for y in range(50, 150):
+            img.putpixel((x, y), (220, 50, 50, 255))
+    in_path = os.path.join(tmp_dir, "green_bg.png")
+    img.save(in_path)
+
+    # Chromakey remove
+    nobg_path = os.path.join(tmp_dir, "nobg.png")
+    remove_chromakey(in_path, nobg_path, color="green", despill=True)
+
+    # Trim
+    final_path = os.path.join(tmp_dir, "final.png")
+    trim_transparent(nobg_path, final_path, padding=4)
+
+    result = Image.open(final_path)
+    assert result.mode == "RGBA"
+    assert result.getpixel((0, 0))[3] == 0  # corner transparent
+    # Center should be opaque red
+    cx, cy = result.width // 2, result.height // 2
+    center = result.getpixel((cx, cy))
+    assert center[3] > 200
+    assert center[0] > 150  # red
+
+
+def test_full_pipeline_function(tmp_dir):
+    """Test full_pipeline() with auto-detect → extract."""
+    from game_asset_tools.extract import full_pipeline
+
+    # Create a simple design image with distinct elements
+    img = Image.new("RGBA", (400, 300), (180, 200, 220, 255))
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([50, 50, 150, 150], fill=(255, 0, 0, 255))
+    draw.rectangle([200, 100, 350, 250], fill=(0, 0, 255, 255))
+    src_path = os.path.join(tmp_dir, "design.png")
+    img.save(src_path)
+
+    out_dir = os.path.join(tmp_dir, "output")
+    result = full_pipeline(
+        source_path=src_path,
+        output_dir=out_dir,
+        chromakey=False,  # no chromakey for simple test
+        trim=False,
+    )
+
+    assert result["total"] >= 1
+    assert os.path.exists(result["annotated_path"])
+    assert os.path.exists(result["elements_path"])
+
+
+def test_auto_detect_then_extract(tmp_dir):
+    """Auto-detect → extract integration."""
+    from game_asset_tools.auto_detect import detect_elements
+    from game_asset_tools.extract import extract_elements
+
+    img = Image.new("RGBA", (300, 300), (200, 200, 200, 255))
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([30, 30, 130, 130], fill=(255, 50, 50, 255))
+    draw.rectangle([170, 50, 270, 250], fill=(50, 50, 255, 255))
+    src_path = os.path.join(tmp_dir, "design.png")
+    img.save(src_path)
+
+    elements = detect_elements(src_path, min_size=40)
+    total_detected = sum(len(v) for v in elements["layers"].values())
+    assert total_detected >= 1
+
+    out_dir = os.path.join(tmp_dir, "output")
+    results = extract_elements(src_path, elements, out_dir, remove_bg=False, trim=False)
+    assert len(results) >= 1
+    assert all(os.path.exists(r["output_path"]) for r in results)
