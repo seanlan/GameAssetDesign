@@ -100,7 +100,7 @@ Full Swagger docs at http://localhost:8080/docs
 python3 -m game_asset_tools --help
 ```
 
-19 commands:
+20 commands:
 
 | Command | Description |
 |---------|-------------|
@@ -183,7 +183,7 @@ server/                  — FastAPI backend
 web/                     — React frontend (Vite + TypeScript)
   src/components/        — UI components
   src/hooks/             — WebSocket hook
-game_asset_tools/        — Python toolkit (19 commands, 16 modules)
+game_asset_tools/        — Python toolkit (20 commands, 16 modules)
 game-assets.yaml         — Project config (created by /game-asset:init)
 templates/               — Card templates, fonts
 output/                  — Asset output
