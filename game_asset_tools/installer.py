@@ -133,6 +133,64 @@ def init_project(project_dir: str) -> None:
     print("Start Claude Code in this directory, then run: /game-asset:init")
 
 
+def check_installation() -> None:
+    """Check if all dependencies and tools are properly installed."""
+    print("🎮 Game Asset Design — Installation Check")
+    print()
+
+    package_root = _find_package_root()
+    print(f"   Package root: {package_root}")
+
+    # Check Python version
+    v = sys.version_info
+    ok = v >= (3, 10)
+    print(f"   Python {v.major}.{v.minor}.{v.micro}: {'✅' if ok else '❌ Need 3.10+'}")
+
+    # Check core dependencies
+    deps = [
+        ("PIL", "Pillow"),
+        ("yaml", "PyYAML"),
+        ("numpy", "NumPy"),
+        ("cv2", "OpenCV"),
+    ]
+    for module, name in deps:
+        try:
+            __import__(module)
+            print(f"   {name}: ✅")
+        except ImportError:
+            print(f"   {name}: ❌ Not installed")
+
+    # Check optional dependencies
+    optional = [
+        ("rembg", "rembg (background removal)"),
+        ("fastapi", "FastAPI (web server)"),
+        ("uvicorn", "Uvicorn (web server)"),
+    ]
+    for module, name in optional:
+        try:
+            __import__(module)
+            print(f"   {name}: ✅")
+        except ImportError:
+            print(f"   {name}: ⚠️  Optional, not installed")
+
+    # Check plugin files
+    commands_dir = os.path.join(package_root, "commands")
+    skills_dir = os.path.join(package_root, "skills", "game-asset")
+    print(f"   Commands: {'✅ ' + str(len(os.listdir(commands_dir))) + ' files' if os.path.isdir(commands_dir) else '❌ Not found'}")
+    print(f"   Skills: {'✅' if os.path.exists(os.path.join(skills_dir, 'SKILL.md')) else '❌ Not found'}")
+
+    # Check current directory for initialized project
+    cwd = os.getcwd()
+    claude_dir = os.path.join(cwd, ".claude", "commands")
+    if os.path.isdir(claude_dir):
+        count = len([f for f in os.listdir(claude_dir) if f.startswith("game-asset")])
+        print(f"   Project init: ✅ ({count} commands in .claude/commands/)")
+    else:
+        print(f"   Project init: ❌ Run 'game-asset init .' in your project")
+
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="game-asset",
@@ -144,10 +202,15 @@ def main():
     p_init = subparsers.add_parser("init", help="Initialize game asset commands in a project")
     p_init.add_argument("project_dir", nargs="?", default=".", help="Project directory (default: current)")
 
+    # check
+    p_check = subparsers.add_parser("check", help="Check if game-asset-tools is properly installed")
+
     args = parser.parse_args()
 
     if args.command == "init":
         init_project(args.project_dir)
+    elif args.command == "check":
+        check_installation()
     else:
         parser.print_help()
 

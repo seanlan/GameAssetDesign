@@ -4,25 +4,44 @@ A Claude Code plugin for generating, extracting, and managing 2D game assets. Co
 
 ## Install
 
+### 1. Install CLI
+
 ```bash
-claude plugin add github:lanjinmin/GameAssetDesign
+# Recommended: install with pip
+pip install git+https://github.com/seanlan/GameAssetDesign.git
+
+# Or with uv (faster)
+uv tool install game-asset-tools --from git+https://github.com/seanlan/GameAssetDesign.git
 ```
 
-Or manually:
+### 2. Initialize in your project
 
 ```bash
-git clone https://github.com/lanjinmin/GameAssetDesign.git
-cd GameAssetDesign
-pip3 install -r requirements.txt
+cd my-game-project
+game-asset init .
+```
+
+This copies commands and skills to `.claude/` — Claude Code auto-discovers them.
+
+### 3. Verify installation
+
+```bash
+game-asset check
+```
+
+### 4. Start using in Claude Code
+
+```bash
+claude
+> /game-asset:init          # Create project config
+> /game-asset:generate      # Generate assets
 ```
 
 ## Requirements
 
 - Python 3.10+
-- Node.js 18+ (for web UI)
-- Claude Code
-- `gemini-image` MCP server (for AI generation/editing via Claude Code)
-- `GEMINI_API_KEY` env var (for web service AI features)
+- Claude Code with `gemini-image` MCP server
+- Optional: Node.js 18+ (for web management UI)
 
 ## Commands
 
