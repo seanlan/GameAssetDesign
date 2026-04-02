@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Generate, extract, and manage 2D game assets with AI image generation and Python post-processing.",
   "author": {
-    "name": "lanjinmin"
+    "name": "seanlan"
   },
-  "homepage": "https://github.com/lanjinmin/GameAssetDesign",
-  "repository": "https://github.com/lanjinmin/GameAssetDesign",
+  "homepage": "https://github.com/seanlan/GameAssetDesign",
+  "repository": "https://github.com/seanlan/GameAssetDesign",
   "license": "MIT",
   "keywords": [
     "game-assets",
@@ -19,5 +19,6 @@
     "image-processing"
   ],
   "commands": "./commands/",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
 }

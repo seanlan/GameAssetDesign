@@ -1,55 +1,49 @@
 ---
 name: game-asset-serve
-description: Start/stop the asset manager web service — FastAPI backend + React frontend.
+description: Start the asset manager web service — browse, filter, and manage assets in browser.
 ---
 
 # Asset Manager Web Service
 
 ## Start
 
-The server manages assets in **the current working directory** (where the user's game project is).
+Start the web service from the user's project directory. The server manages assets in the **current working directory**.
 
 ```bash
-# Start backend (port 8080) — from the user's project directory
-PYTHONPATH=${CLAUDE_PLUGIN_ROOT} uvicorn server.main:app --reload --port 8080 &
+# Set Python path to plugin root
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:$PYTHONPATH"
 
-# Start frontend (port 5173)
-cd ${CLAUDE_PLUGIN_ROOT}/web && npm run dev &
+# Build frontend if not built yet
+if [ ! -d "${CLAUDE_PLUGIN_ROOT}/web/dist" ]; then
+    cd "${CLAUDE_PLUGIN_ROOT}/web" && npm install && npm run build
+    cd -
+fi
+
+# Start server (serves API + React frontend)
+python3 -m uvicorn server.main:app --port 8080 --app-dir "${CLAUDE_PLUGIN_ROOT}"
 ```
 
-Then open: http://localhost:5173
-
-## Start with Gemini API (for AI features)
-
-```bash
-GEMINI_API_KEY=your_key uvicorn server.main:app --reload --port 8080 &
-cd web && npm run dev &
-```
+Then open: http://localhost:8080
 
 ## Stop
 
 ```bash
-# Stop backend
 pkill -f "uvicorn server.main:app"
-
-# Stop frontend
-pkill -f "vite"
 ```
 
-## Status
+## What the service provides
 
-```bash
-# Check if services are running
-curl -s http://localhost:8080/api/health 2>/dev/null && echo "Backend: running" || echo "Backend: stopped"
-curl -s http://localhost:5173 >/dev/null 2>&1 && echo "Frontend: running" || echo "Frontend: stopped"
-```
+- Browse all assets in `output/` with thumbnails
+- Filter by type, search by name, sort
+- View asset details: prompt, model, dimensions, version history
+- Select assets for batch operations (export, atlas, delete)
+- Upload design images for analysis (if GEMINI_API_KEY is set)
+- Project progress dashboard
 
 ## URLs
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | http://localhost:5173 | React asset manager UI |
-| Backend API | http://localhost:8080/api | REST API |
-| API Docs | http://localhost:8080/docs | Swagger interactive docs |
-| WebSocket | ws://localhost:8080/ws | Real-time updates |
-| Static Files | http://localhost:8080/output/ | Asset images |
+| URL | Description |
+|-----|-------------|
+| http://localhost:8080 | Asset manager UI |
+| http://localhost:8080/docs | Swagger API docs |
+| http://localhost:8080/api/health | Health check |
