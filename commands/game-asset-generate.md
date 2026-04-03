@@ -1,81 +1,74 @@
 ---
 name: game-asset-generate
-description: Generate new game assets with AI — characters, icons, UI, cards, sprite sheets, tilesets.
+description: Generate game assets — characters, icons, UI, cards, backgrounds. Auto post-processing included.
 ---
 
 # Generate Game Assets
 
-## BEFORE generating
+## Before Starting
 
-1. Load `game-assets.yaml` — get style preset, reference image, keywords
-2. Read `data/asset_types.csv` — get sizes, aspect ratio, prompt suffix for the target type
-3. Read `data/prompt_templates.csv` — get the prompt template + negative prompt for the target type
-4. Read `data/styles.csv` — get NanoBanana/Gemini style params and chroma key color
-5. Read `data/rules.csv` — priority 1 (quality) and priority 4 (style) rules
-6. If `reference_image` is set → Read it, analyze visual style, incorporate into prompt
+1. If no `game-assets.yaml` → ask user for style preset and create it
+2. Read `data/styles.csv` → get model params and chroma key color
+3. Read `data/prompt_templates.csv` → get template for the asset type
+4. If reference_image set → analyze it, incorporate style into prompt
 
-## Prompt Construction
+## Character
+
+Generate on green background → auto chromakey → done.
 
 ```
-Template from prompt_templates.csv
-  + style keywords from styles.csv
-  + project keywords from game-assets.yaml
-  + prompt suffix from asset_types.csv
+Prompt template: character/full_body from prompt_templates.csv
+Add: "on solid bright green #00FF00 background"
+Model: NanoBanana style=anime (failover Gemini)
+Aspect: 3:4
+Post: chromakey green → trim padding=8
+Output: output/characters/char_{name}_v1.png
 ```
 
-## Model Selection (from styles.csv)
+## Icon Set
 
-- If `nanobanana_style` column has value → use `mcp__grsai-nanobanana__generate_image` with that style
-- Otherwise → use `mcp__gemini-image__generate_image` with `gemini_style` value
-- NanoBanana produces better style consistency for anime/ghibli/pixel/cyberpunk/fantasy
+ALWAYS generate all icons in ONE image for style consistency.
 
-## Generation by Type
+```
+Prompt template: icon_set/batch from prompt_templates.csv
+Model: NanoBanana or Gemini
+Aspect: 16:9
+Post: detect bright regions → split → resize to 128x128
+Output: output/icons/icon_{name}_v1.png × N
+```
 
-### Character
-1. Use template: `character/full_body` from prompt_templates.csv
-2. Fill: {name}, {description} from user, {style_keywords} from config
-3. Generate with 3:4 aspect ratio
-4. Show result → user confirms
-5. Post-process per `pipelines.csv`: AI green screen → chromakey → trim
+## Background
 
-### Icon (Single)
-1. Use template: `icon/single`
-2. Generate with 1:1 aspect ratio
-3. No post-processing needed (has dark bg plate, no border)
+```
+Prompt template: background/scene
+Aspect: 16:9
+Post: none (or resize)
+Output: output/backgrounds/bg_{name}_v1.png
+```
 
-### Icon Set (Batch) — RECOMMENDED for consistency
-1. Use template: `icon_set/batch`
-2. Generate ALL icons in one image (16:9)
-3. Split into individual icons with Python crop
-4. Resize each to target sizes
-5. **This is the best method for style consistency**
+## Card
 
-### Card
-1. Use template: `card/complete`
-2. One-shot generation (character + border + title in single image)
-3. Resize to 750x1050
+One-shot: character + border + title in single generation.
 
-### Background
-1. Use template: `background/scene` or `background/battle`
-2. Generate with 16:9
-3. No characters or UI in the prompt
+```
+Prompt template: card/complete
+Aspect: 3:4
+Post: resize to 750x1050
+Output: output/cards/card_{name}_v1.png
+```
 
-### Sprite
-1. Use template: `sprite/reference` for hero image
-2. Then video → extract frames → assemble
+## UI Button
 
-### UI Button
-1. Use template: `ui_button/states` to generate 4 states in one image
-2. Split into normal/hover/pressed/disabled
+```
+Prompt template: ui_button/states (4 states in 2x2 grid)
+Post: split into 4 → rembg each → trim
+Output: output/ui/btn_{name}_{state}.png
+```
 
-### Tileset
-1. Use template: `tileset/seamless`
-2. Test by tiling 3x3 after generation
+## Rules
 
-## After Generation
-
-1. Show result via Read tool → user confirms
-2. If confirmed → post-process per `pipelines.csv`
-3. Save to `output/{type}/` per `asset_types.csv` output_dir column
-4. Update manifest
-5. Inform: "Use /game-asset:manage to view all assets"
+- **1 AI call per asset** — no editing passes
+- **NanoBanana first** — better style consistency, failover to Gemini
+- **Green bg for characters** — chromakey removal preserves all details
+- **Icon sets as batch** — never generate individually
+- **Show result** — always show to user before saving

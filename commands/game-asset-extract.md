@@ -1,85 +1,49 @@
 ---
 name: game-asset-extract
-description: Extract assets from a design image — crop, AI refine with chroma key background, remove background.
+description: Extract assets from a design image. Recommends regeneration for complex elements.
 ---
 
 # Extract Assets from Design Image
 
-Prerequisite: run `/game-asset:analyze` first to generate `output/.tmp/elements.json`
+## Flow
 
-## BEFORE extracting
+1. User provides design image path
+2. Claude reads and analyzes the image visually
+3. For each detected element, recommend the BEST approach:
 
-1. Read `data/pipelines.csv` — find the correct pipeline for each element type
-2. Read `data/styles.csv` — get chroma key color for each element's color tone
-3. Read `data/rules.csv` — priority 2 (bg removal) and priority 3 (bbox) rules
+| Element | Recommended Approach | Why |
+|---------|---------------------|-----|
+| Character | **Regenerate** with `/game-asset:generate` using description | Extraction + post-processing degrades quality |
+| Icons | **Regenerate** as a set with `/game-asset:generate` | One-shot batch is cleaner than crop+edit |
+| Buttons | **Crop + rembg** | Simple shapes, rembg works well |
+| HP/MP bars | **Crop only** | No processing needed |
+| Background | **Crop** (+ AI inpaint if foreground blocking) | Direct extraction works |
 
-## Core Flow
+4. Ask user to confirm approach for each element
+5. Execute: crop what can be cropped, regenerate what should be regenerated
 
-```
-裁切 → AI精修重绘(纯色背景) → 去除背景 → 输出
-```
-
-## Step 1: Crop
-
-```bash
-python3 -m game_asset_tools extract --input design.png --elements output/.tmp/elements.json --output-dir output/ --no-remove-bg --no-trim --padding 0
-```
-
-## Step 2: Per-Type Processing (from pipelines.csv)
-
-For each extracted element, look up its type in `pipelines.csv` and follow the steps:
-
-### Character (pipelines.csv: type=character)
-```
-crop → ai_greenscreen (green #00FF00) → chromakey → trim(padding=10)
-```
-- Chroma key color: from `styles.csv` chroma_key column based on content color tone
-- AI prompt: "Change background to solid bright green #00FF00. Remove UI elements. Keep ALL character details."
-
-### Icon Content (pipelines.csv: type=icon_content)
-```
-crop → nanobanana_regenerate (from description, not edit!) → resize
-```
-- **Do NOT AI-edit the crop** — regenerate from description for better quality
-- Use prompt template from `prompt_templates.csv` icon/single
-
-### Icon Border (pipelines.csv: type=icon_border)
-```
-crop → ai_hollow (magenta #FF00FF) → chromakey → cleanup
-```
-
-### Button (pipelines.csv: type=ui_button)
-```
-crop → rembg → trim(padding=4)
-```
-
-### HP/MP Bar (pipelines.csv: type=ui_bar)
-```
-crop only — no background removal
-```
-
-### Background (pipelines.csv: type=background)
-```
-crop → ai_inpaint (remove foreground)
-```
-
-## Step 3: Output
+## For Crop-based Elements
 
 ```bash
-python3 -m game_asset_tools trim --input asset.png --output asset.png --padding 6
+# Buttons: crop + rembg
+python3 -m game_asset_tools extract --input design.png --elements elements.json --output-dir output/
+
+# Then for each button:
+python3 -m game_asset_tools remove_bg --input btn.png --output btn.png
+python3 -m game_asset_tools trim --input btn.png --output btn.png --padding 4
 ```
 
-Update manifest, then:
-```bash
-python3 -m game_asset_tools manager --output-dir output/ --manifest output/manifest.json --output output/asset_manager.html
-```
+## For Regeneration-based Elements
 
-## One-Step Alternative
+Tell user:
+> "I detected a warrior character and 3 skill icons. For best quality, I recommend regenerating them with AI rather than extracting. Should I proceed?"
 
-For quick extraction without manual per-type processing:
+Then use `/game-asset:generate` with descriptions matching the design image.
 
-```bash
-python3 -m game_asset_tools pipeline --input design.png --output-dir output/
-```
+## Key Insight
 
-This runs: auto-detect → annotate → extract → chromakey → trim in one step.
+**Regeneration > Extraction for quality.** Every AI edit degrades the image.
+Crop from design → AI edit → more AI edits = quality loss at each step.
+Fresh generation from a good prompt = clean, high-quality result.
+
+Only extract simple elements (buttons, bars) that don't need AI processing.

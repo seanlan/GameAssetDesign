@@ -1,43 +1,60 @@
 ---
 name: game-asset-manage
-description: Open the asset manager — browse, filter, and manage all project assets.
+description: Manage assets — browse, export, atlas, version history, web UI.
 ---
 
-# Asset Manager
+# Manage Assets
 
-## Launch
+## Browse
 
+List all assets:
+```bash
+ls output/characters/ output/icons/ output/ui/ output/backgrounds/ output/cards/ output/sprites/
+```
+
+Or generate HTML manager:
 ```bash
 python3 -m game_asset_tools manager --output-dir output/ --manifest output/manifest.json --output output/asset_manager.html
 open output/asset_manager.html
 ```
 
-If web server is running (`python3 -m game_asset_tools serve`), open `http://localhost:8080` instead.
+## Export
 
-## Features
+```bash
+python3 -m game_asset_tools export --engine unity --input-dir output/ --export-dir ./unity_export/
+python3 -m game_asset_tools export --engine godot --input-dir output/ --export-dir ./godot_export/
+python3 -m game_asset_tools export --engine web --input-dir output/ --export-dir ./web_export/
+```
 
-The asset manager provides:
+## Atlas
 
-- **Browse** — Grid view of all assets with thumbnails
-- **Filter** — By type (character/icon/ui/card/background/sprite/tileset)
-- **Sort** — By time, type, name
-- **Search** — By filename or keyword
-- **Select** — Click to select assets for batch operations
-- **Detail view** — Expand to see: prompt, model, style, generation time, post-processing steps, version history, relationships
-- **Progress dashboard** — Project completion status (requires `requirements` in project config)
+```bash
+python3 -m game_asset_tools atlas --input-dir output/icons/ --output output/sprites/atlas.png --meta output/sprites/atlas.json --max-size 1024x1024
+```
 
-## Operations from Manager
+## Version History
 
-After selecting assets, user can request:
-- `/game-asset:refine` — Fix selected assets
-- `/game-asset:export` — Export selected assets
-- `/game-asset:atlas` — Pack selected into atlas
-- `/game-asset:version` — View version history
+```bash
+python3 -m game_asset_tools version list --asset output/characters/hero.png
+python3 -m game_asset_tools version rollback --asset output/characters/hero.png --to 1
+```
 
-## Auto-Refresh
+## Nine-Slice
 
-The manager page is regenerated after every operation:
-- After `/game-asset:generate`
-- After `/game-asset:extract`
-- After `/game-asset:refine`
-- After any delete/rename/reclassify
+```bash
+python3 -m game_asset_tools nine_slice --input output/ui/panel.png --output-dir output/ui/panel_sliced/ --border 12 --preview
+```
+
+## Web Service
+
+```bash
+# Start (from project directory)
+PYTHONPATH=${CLAUDE_PLUGIN_ROOT} uvicorn server.main:app --port 8080 --app-dir ${CLAUDE_PLUGIN_ROOT}
+# Open http://localhost:8080
+```
+
+## Resize
+
+```bash
+python3 -m game_asset_tools resize --input asset.png --output asset_64.png --size 64x64 --mode contain
+```

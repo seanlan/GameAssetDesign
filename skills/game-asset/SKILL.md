@@ -1,124 +1,132 @@
 ---
 name: game-asset
-description: Game asset design and extraction toolkit. Route to specific commands based on user intent.
+description: Generate and extract 2D game assets. Three commands — generate, extract, manage.
 ---
 
 # Game Asset Design
 
-You are a game asset designer. Help users generate, extract, and manage 2D game assets.
-
-## ALWAYS start here
-
-1. Check if `game-assets.yaml` exists in current directory
-2. If not → run `/game-asset:init` first
-3. If yes → read `style.reference_image` for style consistency
-4. Read `data/rules.csv` for priority rules (1=critical, 8=low)
-5. Read `data/pipelines.csv` for the correct processing pipeline
-
-## Knowledge Base
-
-All data files are in `skills/game-asset/data/`:
-
-| File | Purpose |
-|------|---------|
-| `asset_types.csv` | Asset type specs: sizes, aspect ratios, transparency, prompt suffixes |
-| `pipelines.csv` | Step-by-step processing pipeline per asset type (priority ordered) |
-| `styles.csv` | Style presets: prompt keywords, NanoBanana/Gemini params, chroma key color |
-| `rules.csv` | Decision rules with priority levels 1-8 (1=critical) |
-| `prompt_templates.csv` | Reusable prompt templates with variable placeholders |
-
-**Read these files before generating or processing assets.** They codify tested best practices.
+Help users create production-ready 2D game assets.
 
 ## Commands
 
 | Command | When to use |
 |---------|------------|
-| `/game-asset:init` | FIRST command. Create project config with style and reference image |
-| `/game-asset:generate` | Create new assets. Read `asset_types.csv` + `prompt_templates.csv` first |
-| `/game-asset:analyze` | Analyze design image. Read `rules.csv` priority 3 (bbox rules) |
-| `/game-asset:extract` | Extract from design. Read `pipelines.csv` for correct pipeline per type |
-| `/game-asset:refine` | Fix/improve assets. Read `rules.csv` priority 1-2 (quality + bg removal) |
-| `/game-asset:manage` | Browse all assets in management panel |
-| `/game-asset:serve` | Start web management service |
-| `/game-asset:version` | Version history, rollback, compare |
-| `/game-asset:export` | Export for Unity/Godot/Cocos/Web |
-| `/game-asset:atlas` | Pack into texture atlas |
+| `/game-asset:generate` | Create new assets — characters, icons, UI, cards, backgrounds |
+| `/game-asset:extract` | Extract assets from a design image |
+| `/game-asset:manage` | Browse assets, export, atlas, version history |
 
-## Workflows
+## First Time Setup
 
-### Generate from scratch (MUST follow this order)
+If no `game-assets.yaml` exists, ask:
+1. Art style (anime / pixel / ghibli / cyberpunk / fantasy / watercolor / flat / realistic)
+2. Reference image path (optional — a design mockup that defines the visual direction)
+3. Create `game-assets.yaml` and output directories
+
+## /game-asset:generate
+
+**One command, one asset, ready to use.**
+
+### Character
 ```
-/game-asset:init → /game-asset:generate → /game-asset:manage → /game-asset:refine → /game-asset:export
+User: "生成一个暗黑战士角色"
+
+1. Read styles.csv → anime preset → NanoBanana style=anime
+2. Build prompt from prompt_templates.csv character/full_body
+3. Add to prompt: "on solid bright green #00FF00 background"
+4. Generate with NanoBanana (failover to Gemini)
+5. Auto: chromakey green → trim → save
+6. Done: output/characters/char_{name}_v1.png (transparent)
 ```
 
-### Extract from design image (MUST follow this order)
+### Icon Set (ALWAYS generate as a set)
 ```
-/game-asset:init → /game-asset:analyze → /game-asset:extract → /game-asset:manage → /game-asset:refine → /game-asset:export
+User: "生成火球、冰晶、闪电三个技能图标"
+
+1. Build prompt from prompt_templates.csv icon_set/batch
+2. Generate ALL icons in ONE image (16:9)
+3. Auto: smart-split by detecting bright regions → resize each to 128x128
+4. Done: output/icons/icon_{name}_v1.png × N
 ```
 
-## Processing Pipeline Decision Table
+### Single Icon
+```
+Same as icon set but count=1. Still use dark background, no border.
+```
 
-Read `pipelines.csv` for full details. Quick reference:
+### Background
+```
+Generate with 16:9, no post-processing needed.
+```
 
-| Asset Type | Pipeline | Key Rule |
-|-----------|----------|----------|
-| Character | crop → AI green screen (1次) → Python chromakey → trim | Max 1 AI edit |
-| Icon (single) | crop → NanoBanana regenerate from description | Don't AI-edit, regenerate |
-| Icon (batch) | Generate all in 1 image → split | Same context = same style |
-| Icon border | crop → AI hollow center (magenta) → Python chromakey | Separate border from content |
-| Button | crop → rembg directly | Simple shape, rembg works |
-| HP/MP bar | crop only | No processing needed |
-| Background | crop → AI inpaint foreground | Remove characters/UI |
-| Card | One-shot generation (character+border+title) | Single AI call |
-| Sprite | Generate ref → video → extract frames → rembg → assemble | Video preserves character |
-| Tileset | Generate with "seamless" → assemble with --seamless | Edge blending |
-| Nine-slice | crop → nine_slice with border width | 9 parts for scalable UI |
+### Card
+```
+One-shot generation: character + border + title in single image.
+Resize to 750x1050.
+```
+
+### Key Rules
+- **Generate on colored background** — green for warm content, magenta for cool
+- **NanoBanana first, Gemini fallback** — NanoBanana has better style consistency
+- **Icon sets in one image** — never generate icons individually
+- **Max 1 AI call per asset** — no editing, no refinement passes
+
+## /game-asset:extract
+
+**Upload design image → get all assets.**
+
+```
+User: "从这张图提取所有素材" + image path
+
+1. Read image, get dimensions
+2. Claude visually identifies elements (type, bbox)
+3. For each element, decide the best approach:
+   - Character → crop generous bbox, recommend regenerating with NanoBanana instead
+   - Icons → recommend regenerating from description (better quality than extraction)
+   - Buttons → crop + rembg (simple shapes)
+   - HP/MP bars → crop only
+   - Background → crop + AI inpaint if needed
+4. Ask user to confirm before processing
+5. Execute and save to output/
+```
+
+**Critical insight: for characters and icons, REGENERATING produces better results than EXTRACTING.** The extract command should recommend regeneration when possible, only falling back to crop+process for simple elements (buttons, bars).
+
+## /game-asset:manage
+
+**Everything else.**
+
+```
+/game-asset:manage                    → list all assets
+/game-asset:manage export unity       → export for Unity
+/game-asset:manage atlas icons        → pack icons into atlas
+/game-asset:manage version list hero  → version history
+/game-asset:manage serve              → start web UI
+```
+
+## Data Files
+
+`data/` directory contains reference tables:
+
+| File | Purpose |
+|------|---------|
+| `styles.csv` | Style presets: prompt keywords, model params, chroma key colors |
+| `prompt_templates.csv` | Prompt templates with negative prompts |
+| `asset_types.csv` | Asset type specs: sizes, ratios, output dirs |
+| `pipelines.csv` | Processing steps per asset type |
+| `rules.csv` | Decision rules (priority 1-8) |
 
 ## Style Consistency
 
-### Reference Image (Critical)
-```yaml
-# game-assets.yaml
-style:
-  reference_image: "path/to/effect_image.png"  # Global style reference
-```
-
-When generating ANY asset:
-1. Read the reference image with Read tool
-2. Analyze its visual style (color palette, lighting, detail level, art direction)
-3. Incorporate those style characteristics into the generation prompt
-4. Use matching NanoBanana style param from `styles.csv`
-
-### Batch Consistency
-For multiple same-type assets (icon sets, character series):
-- **Generate in one image then split** (best consistency)
-- Use identical prompt template from `prompt_templates.csv`
-- Same NanoBanana `style` parameter for all
-
-## Critical Rules (from rules.csv)
-
-**Priority 1 — Quality:**
-- Never AI-edit more than once
-- Icons: regenerate, don't edit
-- Icon sets: generate in one image for consistency
-
-**Priority 2 — Background Removal:**
-- Characters: chroma key (green/magenta) + Python, NOT rembg
-- Buttons: rembg only (simple shapes)
-- Never white chroma key (blends with highlights)
-- Select chroma by contrast: warm→green, cool→magenta
-
-**Priority 3 — Bbox:**
-- Generous bbox, bigger is better
-- Claude estimates have 20-50px error, always calibrate
-- Pixel scanning for dense elements
+If `game-assets.yaml` has `reference_image`:
+1. Read it before generating
+2. Describe its visual characteristics in the prompt
+3. Match color palette, lighting, detail level
 
 ## MCP Tools
 
-- `mcp__gemini-image__generate_image` — Gemini image generation
-- `mcp__gemini-image__edit_image` — Gemini image editing (chroma key, inpaint)
-- `mcp__grsai-nanobanana__generate_image` — NanoBanana generation (anime/ghibli/pixel styles)
-- `mcp__grsai-nanobanana__blend_images` — Style-consistent blending
+- `mcp__grsai-nanobanana__generate_image` — Primary: style presets, consistency
+- `mcp__gemini-image__generate_image` — Fallback: flexible, reliable
+- `mcp__gemini-image__edit_image` — Only for: green screen swap, inpaint background
 
 ## Python Toolkit
 
@@ -126,4 +134,4 @@ For multiple same-type assets (icon sets, character series):
 python3 -m game_asset_tools --help
 ```
 
-19 commands: resize, remove_bg, trim, chromakey, sprite_sheet, card_composer, video_to_frames, tileset, annotate, extract, pipeline, version, manager, atlas, export, preview, auto_detect, nine_slice, style_unify
+Used internally by commands. Users don't need to call directly.
